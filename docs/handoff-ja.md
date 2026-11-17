@@ -41,6 +41,8 @@ dotnet build src/ChestCounter/ChestCounter.csproj -c Release
 
 ユーザーから、宝箱の絵を Fortnite 本体のアイコン（金の宝箱）にしたいと依頼あり。FModel MCP は Fortnite [LIVE] に非対応で、現行版の `C:\Program Files\Epic Games\Fortnite`（43.10）は MCP の入力許可リスト外のため未着手。ユーザーが FModel デスクトップ版で PNG を書き出すことになった。受け皿として `ChestPicture`（データフォルダーの `overlay-chest.png`）を実装済み: `NativeOverlay.ChestPictureAt` が System.Drawing で縮小して描き、OBS ページは data: URI で埋め込む。ゲームのアセットはリポジトリにも exe にも同梱しない方針（Epic の画像のため、各自の PC にだけ置く）。
 
+その後 FModel MCP で発見: `FortniteGame/Plugins/GameFeatures/DelilahTreasureHuntShared/Content/Assets/Icons/T_UI_DelilahTreasureHunt_ItemGeneric`（128×128、DXT5、`pakchunk50-WindowsClient.utoc` で暗号化なし）。開き方: ディレクトリ `C:\Program Files\Epic Games\Fortnite\FortniteGame\Content\Paks`、`GAME_UE5_LATEST`、AES キーなし、mappings は 43.00 の usmap（43.10 の usmap は v5 で MCP 1.1.1 の解析器が非対応）。FModel の設定に「Fortnite [LIVE]」の項目が残っていると `list_saved_games`／`open_saved_game` が「directory is not absolute」で失敗するため `open_game` を直接使った。PNG はユーザーの `%APPDATA%\ChestCounter\overlay-chest.png` に配置済み。
+
 ## 残っていること
 
 - `README.fr.md`／`README.es.md` は言語リンクの追加のみ（履歴タブの説明は英語・日本語の README のみ）
