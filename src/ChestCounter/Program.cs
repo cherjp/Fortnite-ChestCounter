@@ -106,6 +106,7 @@ for (var i = 0; i < args.Length; i++)
 
 dataDir ??= Store.DefaultFolder();
 var store = new Store(dataDir);
+ChestPicture.Folder = store.Folder; // overlay-chest.png: the player's own chest picture on the card overlay
 ErrorLog.FilePath = store.ErrorLogPath;
 
 // One instance at a time: two would count the same matches and fight over the shortcuts.

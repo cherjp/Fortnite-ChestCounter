@@ -53,6 +53,50 @@ public static class NativeOverlay
     private static IntPtr _fontCardHead, _fontCardBig, _fontCardLabel, _fontCardValue, _chestIcon;
     private static int _cardHeadH, _cardBigH, _cardBigW, _cardRowH, _cardLabelW, _cardValueW, _cardIcon;
     private const int CardIcon = 72;
+
+    // The player's own chest picture (ChestPicture), scaled to the size it is drawn at.
+    private static System.Drawing.Bitmap? _chestPicture;
+    private static (string Path, DateTime Written, int Size) _chestPictureKey;
+
+    /// <summary>The player's chest picture at <paramref name="size"/> pixels (null without one or when it cannot be read).</summary>
+    private static System.Drawing.Bitmap? ChestPictureAt(int size)
+    {
+        var path = ChestPicture.CustomPath;
+        if (path == null)
+        {
+            _chestPicture?.Dispose();
+            _chestPicture = null;
+            _chestPictureKey = default;
+            return null;
+        }
+        try
+        {
+            var key = (path, File.GetLastWriteTimeUtc(path), size);
+            if (_chestPicture != null && key == _chestPictureKey)
+            {
+                return _chestPicture;
+            }
+            using var source = new System.Drawing.Bitmap(path);
+            // Fitted in a square, aspect ratio kept, smooth scaling.
+            var k = Math.Min((double)size / source.Width, (double)size / source.Height);
+            int w = Math.Max(1, (int)Math.Round(source.Width * k)), h = Math.Max(1, (int)Math.Round(source.Height * k));
+            var scaled = new System.Drawing.Bitmap(size, size, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+            using (var g = System.Drawing.Graphics.FromImage(scaled))
+            {
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+                g.DrawImage(source, (size - w) / 2, (size - h) / 2, w, h);
+            }
+            _chestPicture?.Dispose();
+            _chestPicture = scaled;
+            _chestPictureKey = key;
+            return scaled;
+        }
+        catch
+        {
+            return null; // not a picture: the app's chest
+        }
+    }
     private static int _hudBigH, _hudSmallH;
 
     /// <summary>Pixels of this color are fully transparent (styles without a background). Almost black, so that the
@@ -964,9 +1008,14 @@ public static class NativeOverlay
         DeleteObject(frameBrush);
         DeleteObject(frame);
 
-        // The chest, vertically centered (drawn with GDI when the icon cannot be loaded).
+        // The chest, vertically centered: the player's picture, else the app's icon, else drawn with GDI.
         var iconY = (rc.Bottom - _cardIcon) / 2;
-        if (_chestIcon != IntPtr.Zero)
+        if (ChestPictureAt(_cardIcon) is { } picture)
+        {
+            using var g = System.Drawing.Graphics.FromHdc(hdc);
+            g.DrawImageUnscaled(picture, pad, iconY);
+        }
+        else if (_chestIcon != IntPtr.Zero)
         {
             DrawIconEx(hdc, pad, iconY, _chestIcon, _cardIcon, _cardIcon, 0, IntPtr.Zero, 3 /* DI_NORMAL */);
         }

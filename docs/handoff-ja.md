@@ -39,7 +39,7 @@ dotnet build src/ChestCounter/ChestCounter.csproj -c Release
 
 `NativeOverlay` に既定スタイル `card` を追加（`RelayoutCard`／`PaintCard`）。左にアプリのアイコン（exe のリソース 32512 を `LoadImageW`、読めなければ GDI の宝箱）、右に見出し＋線、大きな合計、区切り線の右に 前回・セッション・（チーム）・お宝。OBS 用 `overlay.html` も同じ見た目（`ReportWriter.OverlayCard`）。新規設定の既定は `card`、既存の設定は変更しない。プレビューは `--overlay-preview <file.png>` で全スタイル×3状態を出力できる。
 
-ユーザーから、宝箱の絵を Fortnite 本体のアイコン（金の宝箱）にしたいと依頼あり。FModel MCP は Fortnite [LIVE] に非対応で、現行版の `C:\Program Files\Epic Games\Fortnite`（43.10）は MCP の入力許可リスト外のため未着手。
+ユーザーから、宝箱の絵を Fortnite 本体のアイコン（金の宝箱）にしたいと依頼あり。FModel MCP は Fortnite [LIVE] に非対応で、現行版の `C:\Program Files\Epic Games\Fortnite`（43.10）は MCP の入力許可リスト外のため未着手。ユーザーが FModel デスクトップ版で PNG を書き出すことになった。受け皿として `ChestPicture`（データフォルダーの `overlay-chest.png`）を実装済み: `NativeOverlay.ChestPictureAt` が System.Drawing で縮小して描き、OBS ページは data: URI で埋め込む。ゲームのアセットはリポジトリにも exe にも同梱しない方針（Epic の画像のため、各自の PC にだけ置く）。
 
 ## 残っていること
 

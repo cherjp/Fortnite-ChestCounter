@@ -1301,6 +1301,10 @@ public static class ReportWriter
     private static string OverlayCard(OverlayView v)
     {
         var live = v.CurrentLive && v.Current is { } c && c != "…";
+        // The player's own picture (overlay-chest.png in the data folder), else the app's chest.
+        var chest = ChestPicture.DataUri() is { } chestUri
+            ? $"<img class=\"chest\" src=\"{chestUri}\" alt=\"\" style=\"object-fit:contain\">"
+            : """<svg class="chest" viewBox="0 0 56 56" aria-hidden="true"><path d="M6 26 Q28 4 50 26" fill="#965d27" stroke="#e7b440" stroke-width="3"/><rect x="6" y="20" width="44" height="28" rx="4" fill="#7a4a1e" stroke="#e7b440" stroke-width="3"/><line x1="6" y1="30" x2="50" y2="30" stroke="#e7b440" stroke-width="3"/><rect x="24" y="24" width="8" height="10" rx="2" fill="#e7b440"/></svg>""";
         static string Row(string label, string value, bool treasure = false) =>
             $"<div class=\"r{(treasure ? " t" : "")}\"><span>{H(label)}</span><b>{(treasure ? "<i>★</i> " : "")}{H(value)}</b></div>";
         var rows = Row(L.T("Dernière", "Last", "Última", "前回"), v.Last ?? "—")
@@ -1326,7 +1330,7 @@ public static class ReportWriter
             .r b{color:#fafafc;font:700 17px Bahnschrift,"Segoe UI",sans-serif}
             .r.t b{color:#d6beff}.r.t i{font-style:normal;color:#c49bff}
             </style></head><body><div class="card">
-            <svg class="chest" viewBox="0 0 56 56" aria-hidden="true"><path d="M6 26 Q28 4 50 26" fill="#965d27" stroke="#e7b440" stroke-width="3"/><rect x="6" y="20" width="44" height="28" rx="4" fill="#7a4a1e" stroke="#e7b440" stroke-width="3"/><line x1="6" y1="30" x2="50" y2="30" stroke="#e7b440" stroke-width="3"/><rect x="24" y="24" width="8" height="10" rx="2" fill="#e7b440"/></svg>
+            {{chest}}
             <div><div class="head"><span>{{H(L.T("COFFRES", "CHESTS", "COFRES", "宝箱"))}}</span><span class="line"></span>{{(v.CurrentLive ? $"<span class=\"live\"><i></i>{H(L.T("EN COURS", "IN MATCH", "EN CURSO", "試合中"))}</span>" : "")}}</div>
             <div class="body"><div class="total{{(live ? " gold" : "")}}">{{H(v.Total)}}</div><div class="rows">{{rows}}</div></div></div>
             </div></body></html>
