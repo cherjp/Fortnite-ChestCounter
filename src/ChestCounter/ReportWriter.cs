@@ -261,6 +261,7 @@ public static class ReportWriter
         .flag{display:flex;gap:12px;align-items:flex-start;background:#3a1f12;color:#f6dfb0;border:1px solid #c8412f;border-radius:8px;padding:12px 14px;font-size:14px;margin-top:12px}
         tr.unusual td{background:var(--warnbg)}
         .warn{color:var(--warn)}
+        .up{color:#2e8b57;font-size:12px}.down{color:var(--warn);font-size:12px}
         .chart{padding:18px 18px 12px}
         .bars{display:flex;align-items:stretch;gap:4px;height:150px;padding-top:26px}
         .col{flex:1;min-width:5px;display:flex;align-items:flex-end;position:relative;cursor:default}
@@ -416,6 +417,9 @@ public static class ReportWriter
         var player = matches.Select(m => m.PlayerName).FirstOrDefault(n => !string.IsNullOrEmpty(n)) ?? "";
         // Own treasures only: the team's are found with chests that are not counted here.
         var every = treasures > 0 ? (int)Math.Round((double)totalChests / treasures) : 0;
+        // Match time: average duration and chests per minute (matches whose duration is known).
+        var avgTime = MatchStats.AverageDurationSeconds(matches);
+        var perMinute = MatchStats.ChestsPerMinute(matches);
 
         var sb = new StringBuilder();
         var title = L.T("Compteur de coffres", "Chest Counter", "Contador de cofres", "宝箱カウンター");
@@ -440,6 +444,8 @@ public static class ReportWriter
               {Tile(matches.Count.ToString("N0", Fr), L.T("parties analysées", "matches analyzed", "partidas analizadas", "解析した試合"))}
               {Tile(avg.ToString("0.0", Fr), L.T("coffres par partie", "chests per match", "cofres por partida", "1試合あたりの宝箱"))}
               {Tile(best.ToString("N0", Fr), L.T("record en une partie", "best match", "récord en una partida", "1試合の最高記録"))}
+              {Tile(L.Duration(avgTime), L.T("durée moyenne d'une partie", "average match time", "duración media de una partida", "平均試合時間"))}
+              {Tile(perMinute is double pm ? MatchStats.Rate(pm) : "—", L.T("coffres par minute", "chests per minute", "cofres por minuto", "1分あたりの宝箱"))}
               {Tile(treasures.ToString("N0", Fr), L.T("trésors trouvés", "treasures found", "tesoros encontrados", "見つけたお宝"),
                   (every > 0 ? L.T($"1 tous les {every.ToString("N0", Fr)} coffres", $"1 every {every.ToString("N0", Fr)} chests", $"1 cada {every.ToString("N0", Fr)} cofres", $"宝箱 {every.ToString("N0", Fr)} 個につき 1 個") : null)
                   + (teamTreasures > 0 ? (every > 0 ? "<br>" : "") + L.T($"+{teamTreasures} par l'équipe (estimation)", $"+{teamTreasures} by the team (estimate)", $"+{teamTreasures} del equipo (estimación)", $"+{teamTreasures} 個はチームが発見（推定）") : ""))}
@@ -572,13 +578,21 @@ public static class ReportWriter
 
         // Latest matches.
         sb.Append(FoldStart("matches", $"{L.T("Dernières parties", "Latest matches", "Últimas partidas", "最近の試合")} · <span class=\"num\">{matches.Count.ToString("N0", Fr)}</span>", open: false));
-        sb.Append($"<div class=\"card\"><table id=\"t-matches\"><tr><th>{L.T("Date", "Date", "Fecha", "日時")}</th><th>{L.T("Mode", "Mode", "Modo", "モード")}</th><th>{L.T("Place", "Placement", "Puesto", "順位")}</th><th style=\"text-align:right\">{L.T("Coffres", "Chests", "Cofres", "宝箱")}</th>{(teamChests > 0 ? $"<th class=\"sq\" style=\"text-align:right\">{H(OverlayModel.SquadLabel)}</th>" : "")}<th>{L.T("Trésor", "Treasure", "Tesoro", "お宝")}</th></tr>");
+        sb.Append($"<div class=\"card\"><table id=\"t-matches\"><tr><th>{L.T("Date", "Date", "Fecha", "日時")}</th><th>{L.T("Mode", "Mode", "Modo", "モード")}</th><th>{L.T("Place", "Placement", "Puesto", "順位")}</th><th style=\"text-align:right\">{L.T("Durée", "Time", "Duración", "試合時間")}</th><th style=\"text-align:right\">{L.T("Coffres", "Chests", "Cofres", "宝箱")}</th>{(teamChests > 0 ? $"<th class=\"sq\" style=\"text-align:right\">{H(OverlayModel.SquadLabel)}</th>" : "")}<th style=\"text-align:right\">{L.T("Efficacité", "Efficiency", "Eficiencia", "効率")}</th><th>{L.T("Trésor", "Treasure", "Tesoro", "お宝")}</th></tr>");
+        var efficiency = MatchStats.OfAll(matches);
         foreach (var m in matches)
         {
             var treasure = string.Join("<br>", m.TreasureFinds.Select(f => $"<span class=\"{(f.FromGoldenChest ? "gold" : "star")}\">{(f.FromGoldenChest ? "★★" : "★")} {H(f.DisplayName)}</span>"))
                 + string.Concat(m.TeamTreasureFinds.Select((f, i) => $"<span class=\"team\">{(i == 0 && m.TreasureFinds.Count == 0 ? "" : "<br>")}{TeamIcon} ★ {H(f.DisplayName)}</span>"));
             var win = m.Placement == 1;
-            sb.Append($"<tr class=\"r\"><td class=\"nw num items\">{L.DateTimeShort(When(m))}</td><td>{H(Pretty.Playlist(m.Playlist))}</td><td class=\"nw num\"{(win ? " style=\"color:#b9821c;font-weight:700\"" : "")}>{H(Pretty.Placement(m))}</td><td class=\"n num big\">{m.ChestsOpened}{(m.VehicleChestsMissing ? $" <span class=\"warn\" title=\"{H(VehicleWarning)}\">⚠</span>" : "")}</td>{(teamChests > 0 ? $"<td class=\"n num sq\" title=\"{H(string.Join(", ", m.TeamChests.Where(x => x.Chests > 0).Select(x => $"{x.Name} {x.Chests}")))}\">{(m.TeamChests.Count > 0 ? "+" + m.TeamChestsOpened : "")}</td>" : "")}<td class=\"items\">{treasure}</td></tr>");
+            // Efficiency: chests per minute, ▲ / ▼ against the player's earlier matches (details in the tooltip).
+            var eff = efficiency.GetValueOrDefault(m);
+            var effCell = eff == null ? "—"
+                : $"<span title=\"{H(MatchStats.RateText(eff.Rate) + " · " + MatchStats.Comparison(eff))}\">{MatchStats.Rate(eff.Rate)}{(eff.PastRate == null ? "" : eff.Comparison > 0 ? " <span class=\"up\">▲</span>" : eff.Comparison < 0 ? " <span class=\"down\">▼</span>" : " <span class=\"items\">=</span>")}</span>";
+            var byHand = m.ManualChestsAdded != 0
+                ? $" <span class=\"items\" title=\"{H(L.T($"dont {m.ManualChestsAdded:+#,0;-#,0} ajoutés à la main (onglet Historique)", $"{m.ManualChestsAdded:+#,0;-#,0} of them added by hand (History tab)", $"de ellos, {m.ManualChestsAdded:+#,0;-#,0} añadidos a mano (pestaña Historial)", $"うち {m.ManualChestsAdded:+#,0;-#,0} 個は手動で補正（履歴タブ）"))}\">✎</span>"
+                : "";
+            sb.Append($"<tr class=\"r\"><td class=\"nw num items\">{L.DateTimeShort(When(m))}</td><td>{H(Pretty.Playlist(m.Playlist))}</td><td class=\"nw num\"{(win ? " style=\"color:#b9821c;font-weight:700\"" : "")}>{H(Pretty.Placement(m))}</td><td class=\"n num\">{L.Duration(m.DurationSeconds)}</td><td class=\"n num big\">{m.ChestsOpened}{byHand}{(m.VehicleChestsMissing ? $" <span class=\"warn\" title=\"{H(VehicleWarning)}\">⚠</span>" : "")}</td>{(teamChests > 0 ? $"<td class=\"n num sq\" title=\"{H(string.Join(", ", m.TeamChests.Where(x => x.Chests > 0).Select(x => $"{x.Name} {x.Chests}")))}\">{(m.TeamChests.Count > 0 ? "+" + m.TeamChestsOpened : "")}</td>" : "")}<td class=\"n num nw\">{effCell}</td><td class=\"items\">{treasure}</td></tr>");
         }
         sb.Append($"</table>{Pager("t-matches")}</div>");
         var blind = matches.Count(m => m.VehicleChestsMissing);
@@ -655,9 +669,9 @@ public static class ReportWriter
             })();</script>
             """;
         sb.Append(L.T(
-            "<footer>Compte les coffres que tu as ouverts ou détruits toi-même, d'après tes replays (« rediffusions » dans Fortnite), analysés après chaque partie. Les caisses de munitions et de nourriture ne sont pas comptées. ★★ = coffre doré de la chasse au trésor, détecté de façon certaine. ★ = trésor reçu grâce à un de tes coffres (moment exact), nommé quand l'objet est identifiable. L'icône équipe marque un trésor trouvé par un coéquipier (estimation : déduit des trésors que tu reçois sans avoir ouvert de coffre, car la chasse au trésor les partage avec toute l'équipe) ; il n'entre pas dans tes totaux. Le total de l'équipe ajoute aux tiens les coffres ouverts ou détruits par tes coéquipiers, comptés de la même façon dans tes replays ; un coffre ouvert à plus de 150 m de toi peut manquer, car le replay ne l'enregistre pas.</footer>",
-            "<footer>Counts the chests you opened or destroyed yourself, from your replays, analyzed after each match. Ammo boxes and food boxes are not counted. ★★ = golden treasure hunt chest, detected for sure. ★ = treasure received from one of your own chests (exact moment), named when the item can be identified. The team icon marks a treasure found by a teammate (estimate: deduced from the treasures you receive without opening a chest, as the treasure hunt shares them with the whole team); it is not in your totals. The squad total adds the chests opened or destroyed by your teammates, counted the same way in your replays; a chest opened more than 150 m away from you can be missing, as the replay does not record it.</footer>",
-            "<footer>Cuenta los cofres que has abierto o destruido tú mismo, a partir de tus repeticiones, analizadas después de cada partida. Las cajas de munición y de comida no se cuentan. ★★ = cofre dorado de la búsqueda del tesoro, detectado con seguridad. ★ = tesoro recibido de uno de tus cofres (momento exacto), con nombre cuando el objeto se puede identificar. El icono de equipo marca un tesoro encontrado por un compañero (estimación: deducido de los tesoros que recibes sin abrir un cofre, ya que la búsqueda del tesoro los comparte con todo el equipo); no cuenta en tus totales. El total del equipo añade a los tuyos los cofres abiertos o destruidos por tus compañeros, contados igual en tus repeticiones; un cofre abierto a más de 150 m de ti puede faltar, porque la repetición no lo graba.</footer>", "<footer>あなた自身が開けた・壊した宝箱を、各試合の後に解析したリプレイから数えています。弾薬箱と食料箱は数えません。★★ = お宝探しのゴールド宝箱（確実に検出）。★ = あなた自身の宝箱から受け取ったお宝（正確な時刻）。アイテムが特定できれば名前を表示します。チームアイコンはチームメイトが見つけたお宝を示します（推定: お宝探しはチーム全員で共有されるため、宝箱を開けずに受け取ったお宝から推測）。あなたの合計には含みません。チーム合計は、チームメイトが開けた・壊した宝箱を同じ方法であなたのリプレイから数えて加えたものです。あなたから150m以上離れた場所で開けられた宝箱はリプレイに記録されないため、抜けることがあります。効率は1分あたりの宝箱数で、同じプロフィールのそれ以前の試合の平均と比べています。</footer>"));
+            "<footer>Compte les coffres que tu as ouverts ou détruits toi-même, d'après tes replays (« rediffusions » dans Fortnite), analysés après chaque partie. Les caisses de munitions et de nourriture ne sont pas comptées. ★★ = coffre doré de la chasse au trésor, détecté de façon certaine. ★ = trésor reçu grâce à un de tes coffres (moment exact), nommé quand l'objet est identifiable. L'icône équipe marque un trésor trouvé par un coéquipier (estimation : déduit des trésors que tu reçois sans avoir ouvert de coffre, car la chasse au trésor les partage avec toute l'équipe) ; il n'entre pas dans tes totaux. Le total de l'équipe ajoute aux tiens les coffres ouverts ou détruits par tes coéquipiers, comptés de la même façon dans tes replays ; un coffre ouvert à plus de 150 m de toi peut manquer, car le replay ne l'enregistre pas. L'efficacité est le nombre de coffres par minute, comparé à la moyenne de tes parties précédentes sur le même profil.</footer>",
+            "<footer>Counts the chests you opened or destroyed yourself, from your replays, analyzed after each match. Ammo boxes and food boxes are not counted. ★★ = golden treasure hunt chest, detected for sure. ★ = treasure received from one of your own chests (exact moment), named when the item can be identified. The team icon marks a treasure found by a teammate (estimate: deduced from the treasures you receive without opening a chest, as the treasure hunt shares them with the whole team); it is not in your totals. The squad total adds the chests opened or destroyed by your teammates, counted the same way in your replays; a chest opened more than 150 m away from you can be missing, as the replay does not record it. Efficiency is chests per minute, compared with the average of your earlier matches on the same profile.</footer>",
+            "<footer>Cuenta los cofres que has abierto o destruido tú mismo, a partir de tus repeticiones, analizadas después de cada partida. Las cajas de munición y de comida no se cuentan. ★★ = cofre dorado de la búsqueda del tesoro, detectado con seguridad. ★ = tesoro recibido de uno de tus cofres (momento exacto), con nombre cuando el objeto se puede identificar. El icono de equipo marca un tesoro encontrado por un compañero (estimación: deducido de los tesoros que recibes sin abrir un cofre, ya que la búsqueda del tesoro los comparte con todo el equipo); no cuenta en tus totales. El total del equipo añade a los tuyos los cofres abiertos o destruidos por tus compañeros, contados igual en tus repeticiones; un cofre abierto a más de 150 m de ti puede faltar, porque la repetición no lo graba. La eficiencia es el número de cofres por minuto, comparado con la media de tus partidas anteriores en el mismo perfil.</footer>", "<footer>あなた自身が開けた・壊した宝箱を、各試合の後に解析したリプレイから数えています。弾薬箱と食料箱は数えません。★★ = お宝探しのゴールド宝箱（確実に検出）。★ = あなた自身の宝箱から受け取ったお宝（正確な時刻）。アイテムが特定できれば名前を表示します。チームアイコンはチームメイトが見つけたお宝を示します（推定: お宝探しはチーム全員で共有されるため、宝箱を開けずに受け取ったお宝から推測）。あなたの合計には含みません。チーム合計は、チームメイトが開けた・壊した宝箱を同じ方法であなたのリプレイから数えて加えたものです。あなたから150m以上離れた場所で開けられた宝箱はリプレイに記録されないため、抜けることがあります。効率は1分あたりの宝箱数で、同じプロフィールのそれ以前の試合の平均と比べています。</footer>"));
         sb.Append(script).Append("</main></body></html>");
         return sb.ToString();
     }
@@ -730,7 +744,9 @@ public static class ReportWriter
         var seasonChests = Math.Max(0, huntTimes.Count + manual);
         var week = TreasureCatalog.ShownWeek(now);
         var weekTimes = week == null ? new List<DateTime>() : huntTimes.Where(t => t >= week.From && t < week.To).ToList();
-        var weekManual = week == null ? 0 : Math.Max(0, manualEntries.Where(e => e.WeekFromUtc == week.From).Sum(e => e.Chests));
+        // Chests added by hand to a match of the week (history tab) count in that week too.
+        var weekManual = week == null ? 0 : Math.Max(0, manualEntries.Where(e => e.WeekFromUtc == week.From).Sum(e => e.Chests)
+            + matches.Where(m => m.ManualChestsAdded != 0 && Start(m) >= week.From && Start(m) < week.To).Sum(m => m.ManualChestsAdded));
         var weekChests = weekTimes.Count + weekManual;
         var boosted = huntTimes.Count(t => TreasureCatalog.Boost(TreasureCatalog.GoldOutfit, t) > 1);
 
@@ -874,7 +890,7 @@ public static class ReportWriter
         }
 
         var byHand = manual > 0 ? L.T($", dont {N(manual)} ajoutés à la main", $", including {N(manual)} added by hand", $", incluidos {N(manual)} añadidos a mano", $"、うち手動追加 {N(manual)} 個") : "";
-        sb.Append($"<div class=\"cgroup\"><div class=\"ghead\">{Tag(false)}<div><div class=\"gt\">{L.T("Toute la saison", "All season", "Toda la temporada", "シーズン全体")}</div><div class=\"gs\"><b>{L.Count(seasonChests, "coffre", "coffres", "chest", "chests", "cofre", "cofres", "宝箱{0}個")}</b> {L.T("depuis le début de la chasse", "since the hunt started", "desde el inicio de la búsqueda", "（お宝探し開始から）")} ({TimeEl(huntStart, "date")}){byHand}</div></div></div>");
+        sb.Append($"<div class=\"cgroup\"><div class=\"ghead\">{Tag(false)}<div><div class=\"gt\">{L.T("Toute la saison", "All season", "Toda la temporada", "シーズン全体")}</div><div class=\"gs\"><b>{L.Count(seasonChests, "coffre", "coffres", "chest", "chests", "cofre", "cofres", "宝箱{0}個")}</b> {L.T("depuis le début de la chasse", "since the hunt started", "desde el inicio de la búsqueda", "お宝探し開始から")} ({TimeEl(huntStart, "date")}){byHand}</div></div></div>");
         sb.Append($"<div class=\"card tcard\"><table class=\"ctable\">{head}");
         foreach (var odds in TreasureCatalog.Odds.Where(o => !o.Weekly && o.Kind != TreasureCatalog.PirateShop))
         {
@@ -1316,7 +1332,7 @@ public static class ReportWriter
     public static string Csv(TrackerData data)
     {
         var sb = new StringBuilder();
-        sb.AppendLine(L.T("date;mode;joueur;place;joueurs;coffres;coffres_coequipiers;caisses_munitions;tresors;fichier", "date;mode;player;placement;players;chests;teammate_chests;ammo_boxes;treasures;file", "fecha;modo;jugador;puesto;jugadores;cofres;cofres_companeros;cajas_municion;tesoros;archivo"));
+        sb.AppendLine(L.T("date;mode;joueur;place;joueurs;coffres;coffres_coequipiers;caisses_munitions;tresors;fichier;duree_s;coffres_a_la_main;coffres_par_minute", "date;mode;player;placement;players;chests;teammate_chests;ammo_boxes;treasures;file;duration_s;chests_by_hand;chests_per_minute", "fecha;modo;jugador;puesto;jugadores;cofres;cofres_companeros;cajas_municion;tesoros;archivo;duracion_s;cofres_a_mano;cofres_por_minuto", "日時;モード;プレイヤー;順位;人数;宝箱;チームメイトの宝箱;弾薬箱;お宝;ファイル;試合時間_秒;手動補正;1分あたりの宝箱"));
 
         foreach (var m in Profiles.Counted(data).OrderBy(When))
         {
@@ -1324,7 +1340,8 @@ public static class ReportWriter
             sb.AppendLine(string.Join(";",
                 When(m).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
                 Pretty.Playlist(m.Playlist), m.PlayerName, m.Placement, m.TotalPlayers,
-                m.ChestsOpened, m.TeamChestsOpened, m.AmmoBoxesOpened, t, m.ReplayFile));
+                m.ChestsOpened, m.TeamChestsOpened, m.AmmoBoxesOpened, t, m.ReplayFile,
+                m.DurationSeconds, m.ManualChestsAdded, MatchStats.ChestsPerMinute(m) is double r ? r.ToString("0.00", CultureInfo.InvariantCulture) : ""));
         }
         return sb.ToString();
     }

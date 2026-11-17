@@ -1,6 +1,6 @@
 <div align="center">
 
-[English](README.md) · [Français](README.fr.md) · **Español**
+[English](README.md) · [Français](README.fr.md) · **Español** · [日本語](README.ja.md)
 
 <img src="docs/icon.png" alt="" width="88">
 

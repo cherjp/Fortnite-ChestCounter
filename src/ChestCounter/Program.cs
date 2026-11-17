@@ -928,7 +928,22 @@ object BuildGuiState()
         }).ToList(),
         session = L.N(session.Sum(m => m.ChestsOpened)),
         sessionMatches = L.N(session.Count),
-        last = last == null ? null : new { chests = L.N(last.ChestsOpened), when = L.DateTimeShort(L.Shown(last.MatchStartUtc ?? last.AnalyzedAtUtc)), mode = Pretty.Playlist(last.Playlist) },
+        last = last == null ? null : new { chests = L.N(last.ChestsOpened), when = L.DateTimeShort(L.Shown(last.MatchStartUtc ?? last.AnalyzedAtUtc)), mode = Pretty.Playlist(last.Playlist), duration = L.Duration(last.DurationSeconds) },
+        // Match time: average duration and chests per minute of the profile shown.
+        avgTime = L.Duration(MatchStats.AverageDurationSeconds(matches)),
+        perMinute = MatchStats.ChestsPerMinute(matches) is double perMin ? MatchStats.Rate(perMin) : "—",
+        history = HistoryRows(matches),
+        deleted = data.DeletedMatches
+            .Where(m => profile == null || Profiles.Key(m) == profile.Key)
+            .OrderByDescending(m => m.DeletedUtc ?? DateTime.MinValue)
+            .Select(m => new
+            {
+                id = m.SessionId,
+                when = L.DateTimeShort(L.Shown(m.MatchStartUtc ?? m.AnalyzedAtUtc)),
+                mode = Pretty.Playlist(m.Playlist),
+                chests = L.N(m.ChestsOpened),
+                deletedWhen = m.DeletedUtc is { } at ? L.DateTimeShort(L.Shown(at)) : "",
+            }).ToList(),
         squad = config.ShowSquadTotal && view.TeamChests > 0 ? new { total = L.N(view.SquadChests), team = L.N(view.TeamChests) } : null,
         treasures = L.N(matches.Sum(m => m.TreasureFinds.Count)),
         matches = L.N(matches.Count),
@@ -976,6 +991,32 @@ object BuildGuiState()
             .Select(n => new { id = n.Id, level = n.Level, title = n.TitleIn(L.Code), text = n.TextIn(L.Code), link = n.Link }).ToList(),
         reportStamp = File.Exists(store.ReportPath) ? File.GetLastWriteTimeUtc(store.ReportPath).Ticks.ToString() : "",
     };
+}
+
+// The history tab: every counted match of the profile shown, newest first, with its time, chests and efficiency.
+static List<object> HistoryRows(List<MatchRecord> matches)
+{
+    var efficiency = MatchStats.OfAll(matches);
+    return matches.OrderByDescending(m => m.MatchStartUtc ?? m.AnalyzedAtUtc).Select(m =>
+    {
+        var e = efficiency.GetValueOrDefault(m);
+        return (object)new
+        {
+            id = m.SessionId,
+            when = L.DateTimeShort(L.Shown(m.MatchStartUtc ?? m.AnalyzedAtUtc)),
+            mode = Pretty.Playlist(m.Playlist),
+            place = Pretty.Placement(m),
+            win = m.Placement == 1,
+            duration = L.Duration(m.DurationSeconds),
+            chests = L.N(m.ChestsOpened),
+            counted = L.N(m.ChestsOpened - m.ManualChestsAdded),
+            manual = m.ManualChestsAdded != 0 ? m.ManualChestsAdded.ToString("+#,0;-#,0", L.Culture) : null,
+            rate = e != null ? MatchStats.Rate(e.Rate) : "—",
+            cmp = e?.PastRate != null ? e.Comparison : (int?)null,
+            effTip = e != null ? $"{MatchStats.RateText(e.Rate)} · {MatchStats.Comparison(e)}" : "—",
+            file = m.ReplayFile,
+        };
+    }).ToList();
 }
 
 // Runs on the main loop (the counter's state is only changed there), the page waits for the result.
@@ -1099,6 +1140,24 @@ object? RunGuiAction(string name, System.Text.Json.JsonElement value)
             }
             break;
         }
+        // History tab: chests added to (or removed from) one match, back to the replay's count, deleted and restored.
+        case "matchAdjust":
+            if (value.ValueKind == System.Text.Json.JsonValueKind.Object && value.TryGetProperty("id", out var adjustId)
+                && value.TryGetProperty("chests", out var adjustBy) && adjustBy.TryGetInt32(out var adjustChests))
+            {
+                result = new { applied = MatchHistory.Adjust(data, adjustId.GetString() ?? "", adjustChests) };
+                store.SaveData(data);
+            }
+            break;
+        case "matchReset":
+            if (MatchHistory.ResetAdjust(data, Str())) store.SaveData(data);
+            break;
+        case "matchDelete":
+            if (MatchHistory.Delete(data, Str())) store.SaveData(data);
+            break;
+        case "matchRestore":
+            if (MatchHistory.Restore(data, Str())) store.SaveData(data);
+            break;
         case "manualRemove":
             if (Profiles.RemoveManual(data, config, Str()))
             {

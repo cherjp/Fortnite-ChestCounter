@@ -109,7 +109,17 @@ public sealed class MatchRecord
     public int? Placement { get; set; }
     public int? TotalPlayers { get; set; }
     public int? Eliminations { get; set; }
+    /// <summary>Chests of the match: those counted in the replay + <see cref="ManualChestsAdded"/>.</summary>
     public int ChestsOpened { get; set; }
+
+    /// <summary>
+    /// Chests the player added (or removed, when negative) to this match by hand, in the history tab. Already in
+    /// <see cref="ChestsOpened"/>; kept when the replay is analyzed again.
+    /// </summary>
+    public int ManualChestsAdded { get; set; }
+
+    /// <summary>When the player deleted this match from the history (set on the records of <see cref="TrackerData.DeletedMatches"/>).</summary>
+    public DateTime? DeletedUtc { get; set; }
     public int AmmoBoxesOpened { get; set; }
     public int OtherContainersOpened { get; set; }
     /// <summary>Non-chest interactions by kind (loot cannons, ammo boxes, food boxes...).</summary>
@@ -228,6 +238,12 @@ public sealed class TrackerData
     public int AnalyzerVersion { get; set; } = 1;
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
     public List<MatchRecord> Matches { get; set; } = new();
+
+    /// <summary>
+    /// Matches the player deleted from the history (history tab): left out of every figure, never added again when their
+    /// replay is read again, and kept here so that they can be restored.
+    /// </summary>
+    public List<MatchRecord> DeletedMatches { get; set; } = new();
 
     /// <summary>Key = file name|size|last write ticks. Value = session id, "skipped" or "error: ...".</summary>
     public Dictionary<string, string> ProcessedFiles { get; set; } = new();

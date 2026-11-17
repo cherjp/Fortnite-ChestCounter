@@ -1,6 +1,6 @@
 <div align="center">
 
-**English** · [Français](README.fr.md) · [Español](README.es.md)
+**English** · [Français](README.fr.md) · [Español](README.es.md) · [日本語](README.ja.md)
 
 <img src="docs/icon.png" alt="" width="88">
 
@@ -55,9 +55,10 @@ Because Fortnite only writes the replay's decryption key when the match ends, ch
 
 ## The window
 
-Five tabs: **Home**, **Report**, **Overlay**, **Settings** and **Help**. At the top, your account and what the counter is doing (*Waiting for a match*, *Match in progress*, *Counting the chests…*).
+Six tabs: **Home**, **History**, **Report**, **Overlay**, **Settings** and **Help**. At the top, your account and what the counter is doing (*Waiting for a match*, *Match in progress*, *Counting the chests…*).
 
-- **Home**: your total, this session, your last match and your treasures, the buttons of the overlay and of the updates, and the activity (each match counted, or why one was skipped).
+- **Home**: your total, this session, your last match (with its time), your average match time and chests per minute, your treasures, the buttons of the overlay and of the updates, and the activity (each match counted, or why one was skipped).
+- **History**: every match with its time, chests and efficiency (chests per minute, ▲ / ▼ against your earlier matches). The pencil of a match adds or removes chests (kept when the replay is analyzed again) or deletes the match: it leaves every total, does not come back when its replay is read again, and can be restored from *Deleted matches*.
 - **Report**: all your statistics (see below).
 - **Overlay**: the in-game overlay and the page for OBS.
 - **Settings**: language, times (local or UTC, 12- or 24-hour clock), notification area, open with Fortnite, updates, replays folder.
@@ -79,7 +80,7 @@ Click the **pencil** of *Chests in total* (Home or Report) to add the chests you
 
 | Setting | What it does |
 |---|---|
-| Language | French, English or Spanish. |
+| Language | French, English, Spanish or Japanese. |
 | Times shown in | Local time (default) or UTC, for the weeks, Treasure Hours and matches. |
 | Clock | Same as Windows (default), 12-hour or 24-hour. |
 | Minimize to the notification area | Yes: minimizing the window puts it next to the clock, at the bottom right of the taskbar (chest icon, sometimes behind the small ^ arrow). No (default): it stays in the taskbar like a normal window. |
@@ -114,7 +115,7 @@ To see it over the game, set Fortnite to **Windowed Fullscreen** (*Settings → 
 
 ## The report
 
-The **Report** tab updates by itself after each match: total, matches, average, best match, treasures (and **1 treasure every N chests**), chests per day, chest types and where your treasures come from. The switch under the figures adds the **squad total** (off by default). The long parts fold: click their title to open them.
+The **Report** tab updates by itself after each match: total, matches, average, best match, average match time, chests per minute, treasures (and **1 treasure every N chests**), chests per day, chest types and where your treasures come from. The switch under the figures adds the **squad total** (off by default). The long parts fold: click their title to open them.
 
 <p align="center"><img src="docs/report-en.png" alt="Report tab" width="820"></p>
 
@@ -190,7 +191,7 @@ To start over, delete this folder (or keep `data.json` to keep your history). If
 ## Command line options
 
 ```
-ChestCounter.exe --lang <fr|en|es>   change the language
+ChestCounter.exe --lang <fr|en|es|ja>   change the language
 ChestCounter.exe --demos <folder>    another replays folder
 ChestCounter.exe --data <folder>     another data folder
 ChestCounter.exe --once              analyze the finished replays, then quit (writes into the terminal)

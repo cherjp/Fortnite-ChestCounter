@@ -10,7 +10,44 @@ public static class GuiPage
     public static Dictionary<string, string> Texts() => new()
     {
         ["home"] = L.T("Accueil", "Home", "Inicio", "ホーム"),
+        ["history"] = L.T("Historique", "History", "Historial", "履歴"),
         ["report"] = L.T("Rapport", "Report", "Informe", "レポート"),
+        ["histIntro"] = L.T("Toutes les parties comptées du profil affiché. Le crayon corrige les coffres d'une partie ou la supprime ; une partie supprimée sort de tous les totaux et peut être restaurée.",
+            "Every counted match of the profile shown. The pencil corrects a match's chests or deletes it; a deleted match leaves every total and can be restored.",
+            "Todas las partidas contadas del perfil mostrado. El lápiz corrige los cofres de una partida o la elimina; una partida eliminada sale de todos los totales y se puede restaurar.",
+            "表示中のプロフィールで集計したすべての試合です。鉛筆ボタンで試合ごとの宝箱数を補正したり、試合を削除したりできます。削除した試合はすべての合計から除かれ、あとで元に戻せます。"),
+        ["avgTime"] = L.T("Durée moyenne d'une partie", "Average match time", "Duración media de una partida", "平均試合時間"),
+        ["perMinute"] = L.T("{0} coffres par minute", "{0} chests per minute", "{0} cofres por minuto", "1分あたり {0} 個"),
+        ["perMinuteLabel"] = L.T("coffres par minute", "chests per minute", "cofres por minuto", "1分あたりの宝箱"),
+        ["perMatchLabel"] = L.T("coffres par partie", "chests per match", "cofres por partida", "1試合あたりの宝箱"),
+        ["colDate"] = L.T("Date", "Date", "Fecha", "日時"),
+        ["colMode"] = L.T("Mode", "Mode", "Modo", "モード"),
+        ["colPlace"] = L.T("Place", "Placement", "Puesto", "順位"),
+        ["colTime"] = L.T("Durée", "Time", "Duración", "試合時間"),
+        ["colChests"] = L.T("Coffres", "Chests", "Cofres", "宝箱"),
+        ["colEff"] = L.T("Coffres/min", "Chests/min", "Cofres/min", "効率（個/分）"),
+        ["editMatch"] = L.T("Modifier cette partie", "Edit this match", "Modificar esta partida", "この試合を編集"),
+        ["deleteMatch"] = L.T("Supprimer cette partie", "Delete this match", "Eliminar esta partida", "この試合を削除"),
+        ["deleteConfirm"] = L.T("Supprimer cette partie de l'historique ? Elle sort du total, des moyennes et du rapport. Tu peux la restaurer dans « Parties supprimées », en bas de l'onglet Historique.",
+            "Delete this match from the history? It leaves the total, the averages and the report. You can restore it in \"Deleted matches\", at the bottom of the History tab.",
+            "¿Eliminar esta partida del historial? Sale del total, de las medias y del informe. Puedes restaurarla en «Partidas eliminadas», al final de la pestaña Historial.",
+            "この試合を履歴から削除しますか？合計・平均・レポートから除かれます。履歴タブの下にある「削除した試合」からいつでも元に戻せます。"),
+        ["counted"] = L.T("Comptés dans le replay : {0}", "Counted in the replay: {0}", "Contados en la repetición: {0}", "リプレイで数えた数: {0}"),
+        ["byHandMatch"] = L.T("Corrigés à la main : {0}", "Changed by hand: {0}", "Corregidos a mano: {0}", "手動補正: {0}"),
+        ["matchTotal"] = L.T("Total de la partie : {0}", "Match total: {0}", "Total de la partida: {0}", "この試合の合計: {0}"),
+        ["effLine"] = L.T("Efficacité : {0}", "Efficiency: {0}", "Eficiencia: {0}", "効率: {0}"),
+        ["adjustHelp"] = L.T("Le nombre tapé s'ajoute aux coffres de la partie (un nombre négatif en retire). La correction est gardée si le replay est réanalysé.",
+            "The number typed is added to the match's chests (a negative number removes some). The change is kept if the replay is analyzed again.",
+            "El número escrito se suma a los cofres de la partida (un número negativo quita cofres). La corrección se conserva si la repetición se analiza de nuevo.",
+            "入力した数がこの試合の宝箱に加算されます（マイナスの数で減らせます）。リプレイを再解析しても補正は保持されます。"),
+        ["resetAdjust"] = L.T("Revenir au nombre du replay", "Back to the replay's count", "Volver al número de la repetición", "リプレイの数に戻す"),
+        ["deleted"] = L.T("Parties supprimées", "Deleted matches", "Partidas eliminadas", "削除した試合"),
+        ["deletedHelp"] = L.T("Elles ne sont plus comptées, même quand leur replay est relu.", "They are no longer counted, even when their replay is read again.", "Ya no se cuentan, aunque su repetición se vuelva a leer.", "リプレイを読み直しても再集計されません。"),
+        ["restore"] = L.T("Restaurer", "Restore", "Restaurar", "元に戻す"),
+        ["deletedOn"] = L.T("supprimée le {0}", "deleted {0}", "eliminada el {0}", "{0} に削除"),
+        ["chestsN"] = L.T("{0} coffres", "{0} chests", "{0} cofres", "宝箱 {0} 個"),
+        ["showMore"] = L.T("Afficher 25 de plus", "Show 25 more", "Mostrar 25 más", "さらに25件表示"),
+        ["noMatches"] = L.T("Aucune partie comptée pour l'instant.", "No match counted yet.", "Ninguna partida contada por ahora.", "まだ集計した試合はありません。"),
         ["overlay"] = L.T("Overlay", "Overlay", "Overlay", "オーバーレイ"),
         ["settings"] = L.T("Réglages", "Settings", "Ajustes", "設定"),
         ["help"] = L.T("Aide", "Help", "Ayuda", "ヘルプ"),
@@ -215,6 +252,19 @@ public static class GuiPage
         .mhist span{flex:1;color:var(--cmuted);font-size:13px}
         .mhist .mx{border:0;background:none;color:var(--cmuted);font-size:18px;line-height:1;cursor:pointer;padding:2px 7px;border-radius:4px}
         .mhist .mx:hover{color:var(--warn);background:rgba(163,54,31,.1)}
+        .hist{overflow-x:auto}
+        .hist table{width:100%;border-collapse:collapse;font-size:14px}
+        .hist th{font-size:12px;color:var(--cmuted);text-align:left;font-weight:600;padding:6px 8px;border-bottom:2px solid var(--line);white-space:nowrap}
+        .hist td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+        .hist tr:last-child td{border-bottom:0}
+        .hist .r{text-align:right}.nw{white-space:nowrap}.win{color:#b9821c;font-weight:700}
+        .hman{font-size:12px;color:var(--cmuted);white-space:nowrap}
+        .up{color:#2e8b57;font-size:12px}.down{color:var(--warn);font-size:12px}
+        .ib{width:34px;height:34px;padding:0;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--cink);cursor:pointer;display:inline-grid;place-items:center}
+        .ib:hover{background:var(--track)}.ib:focus-visible{outline:3px solid var(--gold);outline-offset:1px}
+        .ib svg{width:16px;height:16px}
+        .mfacts{margin:10px 0;padding-left:20px}.mfacts li{margin:2px 0}
+        .dzone{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
         .notice{position:relative;display:flex;gap:12px;align-items:flex-start;border-left:6px solid var(--gold)}
         .notice.warning{border-left-color:#c8412f;background:#fbe9d0}
         .notice .ni{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font:700 14px "Segoe UI",system-ui,sans-serif;background:var(--gold);color:#fff;margin-top:1px}
@@ -252,7 +302,7 @@ public static class GuiPage
         </div></div><div id="scroll"><main><div id="app"><p class="note">…</p></div><section id="activityPane" class="hidden"><h2 class="pirate"></h2><div class="card log"></div></section><section id="reportPane" class="hidden"><iframe id="rep" title="Report" scrolling="no"></iframe></section><div id="foot"></div></main></div>
         <dialog id="dlg" aria-labelledby="dlgT"><div class="dhead"><h2 class="pirate" id="dlgT"></h2><button type="button" class="dclose" id="dlgX">×</button></div><div id="dlgB"></div></dialog>
         <script>
-        const TOKEN='__TOKEN__';let S=null,tab=(()=>{const h=location.hash.slice(1);if(['home','report','overlay','settings','help'].includes(h))return h;try{return localStorage.getItem('cc-gui-tab')||'home'}catch(e){return 'home'}})(),estimate=null,stopped=false,copied=false;
+        const TOKEN='__TOKEN__';let S=null,tab=(()=>{const h=location.hash.slice(1);if(['home','history','report','overlay','settings','help'].includes(h))return h;try{return localStorage.getItem('cc-gui-tab')||'home'}catch(e){return 'home'}})(),estimate=null,stopped=false,copied=false;
         const $=s=>document.querySelector(s);
         // In the counter's own window (?w=1): the title bar of the page, its buttons sent to the window.
         const host=window.chrome&&window.chrome.webview;let maximized=false;
@@ -274,14 +324,14 @@ public static class GuiPage
         function render(force){
           const T=S.txt;document.documentElement.lang=S.lang;
           const head=`<header><div class="brand"><svg width="44" height="44" viewBox="0 0 56 56" aria-hidden="true"><rect x="6" y="20" width="44" height="28" rx="4" fill="#7a4a1e" stroke="#e7b440" stroke-width="3"/><path d="M6 26 Q28 4 50 26" fill="#965d27" stroke="#e7b440" stroke-width="3"/><rect x="24" y="24" width="8" height="10" rx="2" fill="#e7b440"/></svg><div><h1 class="pirate">${esc(S.appName)}</h1><div class="who">${S.profiles.length>1?`<select aria-label="${esc(T.profile)}" title="${esc(T.profile)}" onchange="api('profile',this.value)">${S.profiles.map(p=>`<option value="${esc(p.key)}" ${p.key===S.profileKey?'selected':''}>${esc(p.name)} (${esc(p.matches)})</option>`).join('')}</select>`:`<span>${esc(S.player||'')}</span>`}<span>v${esc(S.version)}</span></div></div></div><span class="pill ${S.status.kind}"><i></i>${esc(S.status.text)}</span></header>
-          <nav>${['home','report','overlay','settings','help'].map(t=>`<button class="${t===tab?'on':''}" onclick="setTab('${t}')">${esc(T[t])}</button>`).join('')}</nav>`;
+          <nav>${['home','history','report','overlay','settings','help'].map(t=>`<button class="${t===tab?'on':''}" onclick="setTab('${t}')">${esc(T[t])}</button>`).join('')}</nav>`;
           if(!force&&busyHeader())return;
           if(!force&&busy()){$('#hdr').innerHTML=head;appHtml=null;return}
           // A click in progress (button pressed, not released yet): rebuilding now would replace its button and the click
           // would be lost. The next refresh, 2 s later, catches up.
           if(!force&&pressedAt&&Date.now()-pressedAt<3000)return;
           let v='';
-          if(tab==='home')v=home(T);else if(tab==='overlay')v=overlay(T);else if(tab==='settings')v=settings(T);else if(tab==='help')v=help(T);
+          if(tab==='home')v=home(T);else if(tab==='history')v=history(T);else if(tab==='overlay')v=overlay(T);else if(tab==='settings')v=settings(T);else if(tab==='help')v=help(T);
           // Rebuilt only when something changed: the buttons stay the same elements between two refreshes.
           const app=`<div id="hdr">${head}</div>${notices(T)}<div id="view">${v}</div>`;
           if(force||app!==appHtml){$('#app').innerHTML=app;appHtml=app}
@@ -337,7 +387,8 @@ public static class GuiPage
           if(S.update)h+=`<div class="card"><h2 class="pirate">${esc(fmt(T.newVersion,S.update.version))}</h2><ul>${S.update.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul><button class="b main" onclick="api('installUpdate')">${esc(T.install)}</button></div>`;
           h+=`<section class="tiles"><div class="tile hero"><button type="button" class="editbtn" onclick="openManual()" title="${esc(T.editChests)}" aria-label="${esc(T.editChests)}">__PENCIL__</button><div class="l">${esc(T.total)}</div><div class="v num">${esc(S.total)}</div><div class="l">${esc(T.totalSub)}${S.manual?'<br>'+esc(fmt(T.byHand,S.manualText.replace('+',''))):''}</div></div>
             <div class="tile"><div class="v num">${esc(S.session)}</div><div class="l">${esc(T.session)} · ${esc(S.sessionMatches)} ${esc(T.matches)}</div></div>
-            <div class="tile"><div class="v num">${esc(S.last?S.last.chests:'—')}</div><div class="l">${esc(T.last)}${S.last?'<br>'+esc(S.last.when)+' · '+esc(S.last.mode):''}</div></div>
+            <div class="tile"><div class="v num">${esc(S.last?S.last.chests:'—')}</div><div class="l">${esc(T.last)}${S.last?'<br>'+esc(S.last.when)+' · '+esc(S.last.mode)+' · '+esc(S.last.duration):''}</div></div>
+            <div class="tile"><div class="v num">${esc(S.avgTime)}</div><div class="l">${esc(T.avgTime)}<br>${esc(fmt(T.perMinute,S.perMinute))}</div></div>
             ${S.squad?`<div class="tile"><div class="v num">${esc(S.squad.total)}</div><div class="l">${esc(T.squad)}<span class="badge" title="${esc(T.inaccurateWhy)}">${esc(T.inaccurate)}</span><br>${esc(fmt(T.squadSub,S.squad.team))}</div></div>`:''}
             <div class="tile"><div class="v num">★ ${esc(S.treasures)}</div><div class="l">${esc(T.treasures)} · ${esc(S.matches)} ${esc(T.matches)} · ${esc(fmt(T.perMatch,S.average))}</div></div></section>`;
           h+=`<div class="actions"><button class="b main" onclick="setTab('report')">${esc(T.openReport)}</button>`;
@@ -400,6 +451,30 @@ public static class GuiPage
         $('#dlg').addEventListener('pointerdown',e=>{dlgDownOut=dlgOutside(e)});
         $('#dlg').addEventListener('click',e=>{if(dlgDownOut&&dlgOutside(e))$('#dlg').close();dlgDownOut=false});
         window.addEventListener('message',e=>{if(e.origin===location.origin&&e.data&&e.data.cc==='editChests'&&S)openManual()});
+        // History tab: the matches of the profile shown (25 at a time), the pencil opens the edit box of one match.
+        let histShown=25,editId=null;
+        function history(T){
+          const H=S.history||[],D=S.deleted||[];
+          let h=`<p class="note" style="margin:0">${esc(T.histIntro)}</p>
+            <section class="tiles"><div class="tile"><div class="v num">${esc(S.matches)}</div><div class="l">${esc(T.matches)}</div></div>
+            <div class="tile"><div class="v num">${esc(S.avgTime)}</div><div class="l">${esc(T.avgTime)}</div></div>
+            <div class="tile"><div class="v num">${esc(S.perMinute)}</div><div class="l">${esc(T.perMinuteLabel)}</div></div>
+            <div class="tile"><div class="v num">${esc(S.average)}</div><div class="l">${esc(T.perMatchLabel)}</div></div></section>`;
+          if(!H.length)h+=`<div class="card">${esc(T.noMatches)}</div>`;
+          else h+=`<div class="card hist"><table><thead><tr><th>${esc(T.colDate)}</th><th>${esc(T.colMode)}</th><th>${esc(T.colPlace)}</th><th class="r">${esc(T.colTime)}</th><th class="r">${esc(T.colChests)}</th><th class="r">${esc(T.colEff)}</th><th></th></tr></thead><tbody>${H.slice(0,histShown).map(m=>`<tr><td class="num nw">${esc(m.when)}</td><td>${esc(m.mode)}</td><td class="nw${m.win?' win':''}">${esc(m.place)}</td><td class="r num">${esc(m.duration)}</td><td class="r num nw"><b>${esc(m.chests)}</b>${m.manual?` <span class="hman" title="${esc(fmt(T.byHandMatch,m.manual))}">✎${esc(m.manual)}</span>`:''}</td><td class="r num nw" title="${esc(m.effTip)}">${esc(m.rate)}${m.cmp===1?' <span class="up">▲</span>':m.cmp===-1?' <span class="down">▼</span>':''}</td><td class="r"><button type="button" class="ib" title="${esc(T.editMatch)}" aria-label="${esc(T.editMatch)}" onclick="openMatch('${esc(m.id)}')">__PENCIL__</button></td></tr>`).join('')}</tbody></table>
+            ${H.length>histShown?`<div class="actions" style="margin-top:10px"><button class="b" onclick="histShown+=25;render(true)">${esc(T.showMore)}</button></div>`:''}</div>`;
+          if(D.length)h+=`<section><h2 class="pirate">${esc(T.deleted)}</h2><div class="card"><p class="note" style="color:var(--cmuted);margin-top:0">${esc(T.deletedHelp)}</p>${D.map(m=>`<div class="row"><div><div class="t">${esc(m.when)} · ${esc(m.mode)} · ${esc(fmt(T.chestsN,m.chests))}</div><div class="h">${esc(fmt(T.deletedOn,m.deletedWhen))}</div></div><button class="b" onclick="api('matchRestore','${esc(m.id)}')">${esc(T.restore)}</button></div>`).join('')}</div></section>`;
+          return h;
+        }
+        function matchForm(T,m){return `<div class="mtotal">${esc(m.when)} · ${esc(m.mode)} · ${esc(m.place)} · ${esc(m.duration)}</div>${m.file?`<div class="note" style="color:var(--cmuted)">${esc(m.file)}</div>`:''}
+          <ul class="mfacts"><li>${esc(fmt(T.counted,m.counted))}</li><li>${esc(fmt(T.byHandMatch,m.manual||'0'))}</li><li><b>${esc(fmt(T.matchTotal,m.chests))}</b></li><li>${esc(fmt(T.effLine,m.effTip))}</li></ul>
+          <p class="note" style="color:var(--cmuted)">${esc(T.adjustHelp)}</p>
+          <div class="actions"><input type="number" id="madj" step="1" placeholder="0" aria-label="${esc(T.colChests)}" onkeydown="if(event.key==='Enter')adjustMatch()"><button class="b main" onclick="adjustMatch()">${esc(T.addBtn)}</button>${m.manual?`<button class="b" onclick="resetMatch()">${esc(T.resetAdjust)}</button>`:''}</div>
+          <div class="actions dzone"><button class="b danger" onclick="deleteMatch()">${esc(T.deleteMatch)}</button></div>`}
+        function openMatch(id){const T=S.txt,d=$('#dlg'),m=(S.history||[]).find(x=>x.id===id);if(!m){if(d.open)d.close();return}editId=id;estimate=null;$('#dlgT').textContent=T.editMatch;$('#dlgB').innerHTML=matchForm(T,m);$('#dlgX').setAttribute('aria-label',T.close);if(!d.open)d.showModal();const i=$('#madj');if(i)i.focus()}
+        async function adjustMatch(){const i=$('#madj'),n=parseInt(i&&i.value||'0',10);if(!n){if(i)i.focus();return}await api('matchAdjust',{id:editId,chests:n});openMatch(editId)}
+        async function resetMatch(){await api('matchReset',editId);openMatch(editId)}
+        async function deleteMatch(){if(!confirm(S.txt.deleteConfirm))return;await api('matchDelete',editId);editId=null;$('#dlg').close()}
         async function copyObs(){await api('copyObsPath');copied=true;render(true);setTimeout(()=>{copied=false;render(true)},2000)}
         function help(T){
           return `<div class="card"><p style="margin-top:0">${esc(T.helpText)}</p><div class="actions"><button class="b" onclick="api('openDataFolder')">${esc(T.dataFolder)}</button>${S.paths.errorLog?`<button class="b" onclick="api('openErrorLog')">${esc(T.errorLog)}</button>`:''}<button class="b" onclick="api('openIssues')">${esc(T.issue)}</button><button class="b" onclick="api('openRepo')">${esc(T.project)}</button></div></div>

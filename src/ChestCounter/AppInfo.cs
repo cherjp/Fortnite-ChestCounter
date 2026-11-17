@@ -7,7 +7,14 @@ public static class AppInfo
 
     public static string VersionText => $"{Version.Major}.{Version.Minor}.{Math.Max(0, Version.Build)}";
 
-    public const string Repo = "LED-N/Fortnite-ChestCounter";
+    /// <summary>Repository of this edition (Japanese and match history): new versions, problems, project page.</summary>
+    public const string Repo = "cherjp/Fortnite-ChestCounter";
+
+    /// <summary>
+    /// Repository the treasure hunt data (content.json) and the treasure pictures come from: the original project, which
+    /// keeps them up to date every week.
+    /// </summary>
+    public const string ContentRepo = "LED-N/Fortnite-ChestCounter";
     public static string RepoUrl => "https://github.com/" + Repo;
     public static string IssuesUrl => RepoUrl + "/issues";
 

@@ -253,6 +253,21 @@ public sealed class Tracker
 
         record.ReplayFile = file.Name;
 
+        // Deleted by the player from the history: not added again. A newer analysis replaces the copy kept to restore it.
+        if (_data.DeletedMatches.FirstOrDefault(m => m.SessionId == record.SessionId) is { } deleted)
+        {
+            if (deleted.AnalyzerVersion < record.AnalyzerVersion)
+            {
+                record.AnalyzedAtUtc = deleted.AnalyzedAtUtc;
+                record.DeletedUtc = deleted.DeletedUtc;
+                MatchHistory.CarryOver(record, deleted);
+                _data.DeletedMatches[_data.DeletedMatches.IndexOf(deleted)] = record;
+            }
+            _data.ProcessedFiles[key] = record.SessionId;
+            _store.SaveData(_data);
+            return new Outcome(Skipped: L.T("partie supprimée de l'historique", "match deleted from the history", "partida eliminada del historial", "履歴から削除した試合"));
+        }
+
         if (GameModes.WhyNot(record) is { } notCounted)
         {
             // Only Battle Royale on the season's map counts (no OG, Reload, LTM, Creative...). Also drop a record left
@@ -275,6 +290,7 @@ public sealed class Tracker
         {
             // Re-analysis with a newer version of the tool: replace the old record.
             record.AnalyzedAtUtc = existing.AnalyzedAtUtc;
+            MatchHistory.CarryOver(record, existing); // chests added or removed by hand
             _data.Matches.Remove(existing);
         }
 
@@ -594,7 +610,13 @@ public sealed class Tracker
         Console.Write(L.Count(m.ChestsOpened, "coffre", "chest", "cofre", "{0}個")
             + (destroyed > 0 ? L.T($" (dont {L.Count(destroyed, "détruit", "", "")})", $" ({destroyed} destroyed)", $" ({L.Count(destroyed, "", "", "destruido")})", $"（うち {destroyed} 個を破壊）") : ""));
         Console.ResetColor();
-        Console.WriteLine($"  →  total{L.T(" : ", ": ", ": ", ": ")}{L.N(total)}");
+        Console.WriteLine($"  →  {L.T("total", "total", "total", "合計")}{L.T(" : ", ": ", ": ", ": ")}{L.N(total)}");
+        if (m.DurationSeconds is > 0)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine($"   {L.T("Durée", "Match time", "Duración", "試合時間")} {L.Duration(m.DurationSeconds)} · {L.T("Efficacité", "Efficiency", "Eficiencia", "効率")} {MatchStats.Describe(m, _data.Matches)}");
+            Console.ResetColor();
+        }
 
         if (m.TeamChestsOpened > 0)
         {
@@ -659,6 +681,10 @@ public sealed class Tracker
         {
             var avg = ((double)chests / matches.Count).ToString("F1", L.Culture);
             sb.Append(L.T($"   |   Moyenne : {avg} / partie", $"   |   Average: {avg} / match", $"   |   Media: {avg} / partida", $"   |   平均: 1試合あたり {avg} 個"));
+            if (MatchStats.AverageDurationSeconds(matches) is { } avgTime)
+            {
+                sb.Append($"   |   {L.T("Durée moyenne", "Average match time", "Duración media", "平均試合時間")}{L.T(" : ", ": ", ": ", ": ")}{L.Duration(avgTime)}");
+            }
         }
 
         Console.ForegroundColor = ConsoleColor.Cyan;
