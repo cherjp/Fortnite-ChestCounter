@@ -28,7 +28,7 @@ public static class NativeOverlay
     private static int _headerH, _bigH, _captionH, _rowH, _col1W, _col2W, _labelW;
     private static IntPtr _fontHeader, _fontCaption, _fontLabel;
     private static IntPtr _brushBorder, _brushLine;
-    private static string Header => L.T("COFFRES", "CHESTS", "COFRES");
+    private static string Header => L.T("COFFRES", "CHESTS", "COFRES", "宝箱");
     private const string CaptionTotal = "total";
     private static Action<int, int>? _onMoved;
     private static Action<bool>? _onLockChanged;
@@ -131,7 +131,7 @@ public static class NativeOverlay
             }
             catch (Exception ex)
             {
-                Console.WriteLine(L.T($"Overlay indisponible : {ex.Message}", $"Overlay unavailable: {ex.Message}", $"Overlay no disponible: {ex.Message}"));
+                Console.WriteLine(L.T($"Overlay indisponible : {ex.Message}", $"Overlay unavailable: {ex.Message}", $"Overlay no disponible: {ex.Message}", $"オーバーレイを使用できません: {ex.Message}"));
                 ready.Set();
             }
             finally
@@ -239,7 +239,7 @@ public static class NativeOverlay
         _hwnd = CreateWindowExW(
             // Opaque (no WS_EX_LAYERED alpha): nothing for the compositor to blend every frame.
             WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
-            wc.lpszClassName, L.T("Coffres", "Chests", "Cofres"), WS_POPUP,
+            wc.lpszClassName, L.T("Coffres", "Chests", "Cofres", "宝箱"), WS_POPUP,
 
             posX, posY, w, h, IntPtr.Zero, IntPtr.Zero, hInstance, IntPtr.Zero);
         if (_hwnd == IntPtr.Zero)
@@ -273,16 +273,18 @@ public static class NativeOverlay
         }
         _scale = _dpiScale * _sizePercent / 100f;
         int S(int v) => (int)Math.Round(v * _scale);
+        // Japanese labels: a font with Japanese glyphs (Segoe UI and Bahnschrift have none).
+        var ui = L.Ja ? "Yu Gothic UI" : "Segoe UI";
         _fontBig = CreateFontW(-S(38), 0, 0, 0, 800, 0, 0, 0, 1, 0, 0, 5, 0, "Segoe UI");
-        _fontSmall = CreateFontW(-S(14), 0, 0, 0, 500, 0, 0, 0, 1, 0, 0, 5, 0, "Segoe UI");
-        _fontHeader = CreateFontW(-S(12), 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, "Segoe UI");
-        _fontCaption = CreateFontW(-S(11), 0, 0, 0, 600, 0, 0, 0, 1, 0, 0, 5, 0, "Segoe UI");
-        _fontLabel = CreateFontW(-S(13), 0, 0, 0, 600, 0, 0, 0, 1, 0, 0, 5, 0, "Segoe UI");
+        _fontSmall = CreateFontW(-S(14), 0, 0, 0, 500, 0, 0, 0, 1, 0, 0, 5, 0, ui);
+        _fontHeader = CreateFontW(-S(12), 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, ui);
+        _fontCaption = CreateFontW(-S(11), 0, 0, 0, 600, 0, 0, 0, 1, 0, 0, 5, 0, ui);
+        _fontLabel = CreateFontW(-S(13), 0, 0, 0, 600, 0, 0, 0, 1, 0, 0, 5, 0, ui);
         _fontIcon = CreateFontW(-S(14), 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, "Segoe MDL2 Assets");
         // Game-like styles: condensed italic, grayscale anti-aliasing (ClearType would leave colored edges once the
         // background is made transparent).
         _fontHudBig = CreateFontW(-S(40), 0, 0, 0, 700, 1, 0, 0, 1, 0, 0, 4, 0, "Bahnschrift Condensed");
-        _fontHudSmall = CreateFontW(-S(18), 0, 0, 0, 600, 1, 0, 0, 1, 0, 0, 4, 0, "Bahnschrift SemiCondensed");
+        _fontHudSmall = CreateFontW(-S(18), 0, 0, 0, L.Ja ? 700 : 600, 1, 0, 0, 1, 0, 0, 4, 0, L.Ja ? "Yu Gothic UI" : "Bahnschrift SemiCondensed");
     }
 
     private static IntPtr WndProc(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam)
@@ -401,10 +403,10 @@ public static class NativeOverlay
             Console.WriteLine(locked
                 ? L.T($"Overlay verrouillé : la souris passe au travers. {(LockHotkeyRegistered ? "Ctrl+Maj+L" : "« Déverrouiller l'overlay » dans le compteur")} pour le déverrouiller.",
                       $"Overlay locked: the mouse goes through it. {(LockHotkeyRegistered ? "Ctrl+Shift+L" : "\"Unlock the overlay\" in the counter")} to unlock it.",
-                      $"Overlay bloqueado: el ratón lo atraviesa. {(LockHotkeyRegistered ? "Ctrl+Mayús+L" : "«Desbloquear el overlay» en el contador")} para desbloquearlo.")
+                      $"Overlay bloqueado: el ratón lo atraviesa. {(LockHotkeyRegistered ? "Ctrl+Mayús+L" : "«Desbloquear el overlay» en el contador")} para desbloquearlo.", $"オーバーレイを固定しました。マウス操作は透過します。解除するには {(LockHotkeyRegistered ? "Ctrl+Shift+L" : "カウンターの「固定を解除して移動」")}。")
                 : L.T("Overlay déverrouillé : clic gauche maintenu pour le déplacer, cadenas pour le reverrouiller.",
                       "Overlay unlocked: hold the left mouse button to move it, click the padlock to lock it again.",
-                      "Overlay desbloqueado: arrástralo con el clic izquierdo; el candado lo vuelve a bloquear."));
+                      "Overlay desbloqueado: arrástralo con el clic izquierdo; el candado lo vuelve a bloquear.", "オーバーレイの固定を解除しました。左ボタンを押したままで移動、鍵アイコンのクリックで再び固定します。"));
         }
     }
 
@@ -419,8 +421,8 @@ public static class NativeOverlay
         {
             ShowWindow(hwnd, SW_HIDE);
             Console.WriteLine(HotkeyRegistered
-                ? L.T("Overlay masqué : Ctrl+Maj+O (n'importe où) pour le réafficher.", "Overlay hidden: Ctrl+Shift+O (anywhere) to show it again.", "Overlay oculto: Ctrl+Mayús+O (desde cualquier sitio) para volver a mostrarlo.")
-                : L.T("Overlay masqué : « Afficher l'overlay » dans le compteur pour le réafficher.", "Overlay hidden: \"Show the overlay\" in the counter to show it again.", "Overlay oculto: «Mostrar el overlay» en el contador para volver a mostrarlo."));
+                ? L.T("Overlay masqué : Ctrl+Maj+O (n'importe où) pour le réafficher.", "Overlay hidden: Ctrl+Shift+O (anywhere) to show it again.", "Overlay oculto: Ctrl+Mayús+O (desde cualquier sitio) para volver a mostrarlo.", "オーバーレイを隠しました。Ctrl+Shift+O（どこでも）で再表示します。")
+                : L.T("Overlay masqué : « Afficher l'overlay » dans le compteur pour le réafficher.", "Overlay hidden: \"Show the overlay\" in the counter to show it again.", "Overlay oculto: «Mostrar el overlay» en el contador para volver a mostrarlo.", "オーバーレイを隠しました。カウンターの「オーバーレイを表示」で再表示します。"));
         }
     }
 
@@ -605,7 +607,7 @@ public static class NativeOverlay
 
     private sealed record HudRow(string Label, string Value);
 
-    private static HudRow StateRow(OverlayView v) => new(L.T("Dernière", "Last", "Última"), v.Last ?? "—");
+    private static HudRow StateRow(OverlayView v) => new(L.T("Dernière", "Last", "Última", "前回"), v.Last ?? "—");
 
     /// <summary>The figures of the match in progress are readable (its chests are already in the total).</summary>
     private static bool LiveFigures(OverlayView v) => v.CurrentLive && v.Current is { } cur && cur != "…";
@@ -625,7 +627,7 @@ public static class NativeOverlay
             var lockW = Sc(22);
             var bigW = TextWidth(hdc, _fontHudBig, v.Total, out _hudBigH);
             var state = StateRow(v);
-            var sessionLabel = L.T("Session", "Session", "Sesión");
+            var sessionLabel = L.T("Session", "Session", "Sesión", "セッション");
             var rowsW = new[]
             {
                 TextWidth(hdc, _fontHudSmall, state.Label + Sep + state.Value, out _hudSmallH),
@@ -816,7 +818,7 @@ public static class NativeOverlay
         var rowH = _hudSmallH;
         LabelValue(hdc, state.Label, state.Value, left, right, y, rowH, white);
         y += rowH + Sc(2);
-        LabelValue(hdc, L.T("Session", "Session", "Sesión"), v.Session, left, right, y, rowH, white);
+        LabelValue(hdc, L.T("Session", "Session", "Sesión", "セッション"), v.Session, left, right, y, rowH, white);
         y += rowH + Sc(2);
         if (v.Squad != null)
         {

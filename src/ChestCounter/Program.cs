@@ -26,11 +26,11 @@ AppDomain.CurrentDomain.UnhandledException += (_, e) =>
     ErrorLog.Write("Crash", e.ExceptionObject);
     Console.ForegroundColor = ConsoleColor.Red;
     Console.WriteLine();
-    Console.WriteLine(L.T("Erreur inattendue : ", "Unexpected error: ", "Error inesperado: ") + e.ExceptionObject);
+    Console.WriteLine(L.T("Erreur inattendue : ", "Unexpected error: ", "Error inesperado: ", "予期しないエラー: ") + e.ExceptionObject);
     Console.ResetColor();
     if (!Console.IsInputRedirected)
     {
-        Console.WriteLine(L.T("Appuie sur une touche pour fermer.", "Press any key to close.", "Pulsa una tecla para cerrar."));
+        Console.WriteLine(L.T("Appuie sur une touche pour fermer.", "Press any key to close.", "Pulsa una tecla para cerrar.", "何かキーを押すと閉じます。"));
         try { Console.ReadKey(intercept: true); } catch { }
     }
 };
@@ -63,7 +63,7 @@ for (var i = 0; i < args.Length; i++)
                 Compteur de coffres Fortnite
 
                 Options :
-                  --lang <fr|en|es>   langue de l'outil (français, anglais ou espagnol)
+                  --lang <fr|en|es|ja>   langue de l'outil (français, anglais, espagnol ou japonais)
                   --demos <dossier>   dossier des replays (par défaut %LOCALAPPDATA%\FortniteGame\Saved\Demos)
                   --data <dossier>    dossier des données (par défaut %APPDATA%\ChestCounter)
                   --once              analyse les replays terminés puis quitte
@@ -73,7 +73,7 @@ for (var i = 0; i < args.Length; i++)
                 Fortnite Chest Counter
 
                 Options:
-                  --lang <fr|en|es>   language of the tool (French, English or Spanish)
+                  --lang <fr|en|es|ja>   language of the tool (French, English, Spanish or Japanese)
                   --demos <folder>    replays folder (default %LOCALAPPDATA%\FortniteGame\Saved\Demos)
                   --data <folder>     data folder (default %APPDATA%\ChestCounter)
                   --once              analyze the finished replays, then quit
@@ -83,12 +83,22 @@ for (var i = 0; i < args.Length; i++)
                 Contador de cofres de Fortnite
 
                 Opciones:
-                  --lang <fr|en|es>   idioma de la herramienta (francés, inglés o español)
+                  --lang <fr|en|es|ja>   idioma de la herramienta (francés, inglés, español o japonés)
                   --demos <carpeta>   carpeta de repeticiones (por defecto %LOCALAPPDATA%\FortniteGame\Saved\Demos)
                   --data <carpeta>    carpeta de datos (por defecto %APPDATA%\ChestCounter)
                   --once              analiza las repeticiones terminadas y sale
                   --reset-config      vuelve a hacer las preguntas de configuración
                   --overlay-preview <archivo.png>   guarda vistas previas del overlay y sale
+                """, """
+                Fortnite 宝箱カウンター
+
+                オプション:
+                  --lang <fr|en|es|ja>   ツールの言語（フランス語・英語・スペイン語・日本語）
+                  --demos <フォルダー>   リプレイのフォルダー（既定: %LOCALAPPDATA%\FortniteGame\Saved\Demos）
+                  --data <フォルダー>    データフォルダー（既定: %APPDATA%\ChestCounter）
+                  --once                 終了済みのリプレイを解析して終了
+                  --reset-config         初期設定の質問をもう一度表示
+                  --overlay-preview <file.png>   オーバーレイのプレビューを保存して終了
                 """));
             return 0;
     }
@@ -118,7 +128,7 @@ if (previewPath == null && !AcquireInstance(instance, afterUpdate ? TimeSpan.Fro
     L.Set(store.LoadConfig()?.Language ?? L.SystemDefault);
     var alreadyOpen = L.T("Le compteur de coffres est déjà ouvert : regarde dans la barre des tâches.",
         "The chest counter is already open: look in the taskbar.",
-        "El contador de cofres ya está abierto: búscalo en la barra de tareas.");
+        "El contador de cofres ya está abierto: búscalo en la barra de tareas.", "宝箱カウンターはすでに起動しています。タスクバーを確認してください。");
     if (gui && OperatingSystem.IsWindows())
     {
         System.Windows.Forms.MessageBox.Show(alreadyOpen, "Chest Counter", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
@@ -147,7 +157,7 @@ if (L.Normalize(config.Language) == null)
 }
 L.Set(config.Language);
 config.ApplyTimeSettings();
-var appName = L.T("Compteur de coffres Fortnite", "Fortnite Chest Counter", "Contador de cofres de Fortnite");
+var appName = L.T("Compteur de coffres Fortnite", "Fortnite Chest Counter", "Contador de cofres de Fortnite", "Fortnite 宝箱カウンター");
 
 if (demosArg != null) config.DemosFolder = demosArg;
 var defaultDemos = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FortniteGame", "Saved", "Demos");
@@ -182,7 +192,7 @@ if (previewPath != null)
             Thread.Sleep(600);
             var name = Path.GetFileNameWithoutExtension(previewPath) + (style == "classic" ? "" : "-" + style) + suffix + ".png";
             var file = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(previewPath)) ?? ".", name);
-            Console.WriteLine(NativeOverlay.Snapshot(file) ? L.T($"Aperçu : {file}", $"Preview: {file}", $"Vista previa: {file}") : L.T($"Échec de la capture : {file}", $"Capture failed: {file}", $"Error de captura: {file}"));
+            Console.WriteLine(NativeOverlay.Snapshot(file) ? L.T($"Aperçu : {file}", $"Preview: {file}", $"Vista previa: {file}", $"プレビュー: {file}") : L.T($"Échec de la capture : {file}", $"Capture failed: {file}", $"Error de captura: {file}", $"キャプチャに失敗しました: {file}"));
         }
     }
     return 0;
@@ -213,7 +223,7 @@ if (once)
     tracker.Scan(ignoreQuietPeriod: true);
     ReportWriter.WriteAll(store, config, data);
     tracker.PrintSummary();
-    Console.WriteLine(L.T($"  Rapport : {store.ReportPath}", $"  Report: {store.ReportPath}", $"  Informe: {store.ReportPath}"));
+    Console.WriteLine(L.T($"  Rapport : {store.ReportPath}", $"  Report: {store.ReportPath}", $"  Informe: {store.ReportPath}", $"  レポート: {store.ReportPath}"));
     return 0;
 }
 
@@ -258,7 +268,7 @@ if (reanalyzing)
     Console.ForegroundColor = ConsoleColor.Cyan;
     Console.WriteLine(L.T("Nouvelle version de l'analyse : les replays encore présents vont être réanalysés (sans doublon).",
         "New analysis version: the replays still on disk will be analyzed again (no duplicates).",
-        "Nueva versión del análisis: las repeticiones del disco se analizarán de nuevo (sin duplicados)."));
+        "Nueva versión del análisis: las repeticiones del disco se analizarán de nuevo (sin duplicados).", "解析方法が新しくなりました。PCに残っているリプレイをもう一度解析します（重複はしません）。"));
     Console.ResetColor();
 }
 
@@ -279,7 +289,7 @@ if (OperatingSystem.IsWindows())
         Console.ForegroundColor = ConsoleColor.Yellow;
         Console.WriteLine(L.T("L'ancienne version (ChestTracker.exe) est encore ouverte : ferme-la, sinon les deux comptent en même temps.",
             "The old version (ChestTracker.exe) is still open: close it, otherwise both count at the same time.",
-            "La versión antigua (ChestTracker.exe) sigue abierta: ciérrala, si no las dos cuentan a la vez."));
+            "La versión antigua (ChestTracker.exe) sigue abierta: ciérrala, si no las dos cuentan a la vez.", "古いバージョン（ChestTracker.exe）がまだ開いています。閉じないと両方が同時にカウントします。"));
         Console.ResetColor();
         foreach (var p in oldTool) p.Dispose();
     }
@@ -292,13 +302,13 @@ if (!tracker.ReplayFiles().Any())
     Console.WriteLine(Directory.Exists(config.DemosFolder)
         ? L.T("Aucun replay pour l'instant : c'est normal si tu n'as pas encore joué depuis que les replays sont activés.",
               "No replay yet: that is expected if you have not played since replays were turned on.",
-              "Aún no hay repeticiones: es normal si no has jugado desde que activaste las repeticiones.")
+              "Aún no hay repeticiones: es normal si no has jugado desde que activaste las repeticiones.", "まだリプレイがありません。リプレイを有効にしてからプレイしていなければ正常です。")
         : L.T("Le dossier des replays n'existe pas encore : Fortnite le crée à la première partie enregistrée.",
               "The replays folder does not exist yet: Fortnite creates it with the first recorded match.",
-              "La carpeta de repeticiones aún no existe: Fortnite la crea con la primera partida grabada."));
+              "La carpeta de repeticiones aún no existe: Fortnite la crea con la primera partida grabada.", "リプレイのフォルダーはまだありません。最初の試合を記録したときにFortniteが作成します。"));
     Console.WriteLine(L.T("Vérifie dans Fortnite : Paramètres → Jeu → Rediffusions → Enregistrer les rediffusions.",
         "Check in Fortnite: Settings → Game → Replays → Record Replays.",
-        "Compruébalo en Fortnite: Ajustes → Juego → Repeticiones → Grabar repeticiones."));
+        "Compruébalo en Fortnite: Ajustes → Juego → Repeticiones → Grabar repeticiones.", "Fortniteで確認してください: 設定 → ゲーム → リプレイ → リプレイを記録。"));
     Console.ResetColor();
 }
 
@@ -375,13 +385,13 @@ if (gui)
             quit: () => { quit = true; wake.Set(); },
             closeQuestion: () => L.T("Fermer le compteur de coffres ?\n\nTes prochaines parties ne seront comptées qu'à sa prochaine ouverture.",
                 "Close the chest counter?\n\nYour next matches will only be counted when it is opened again.",
-                "¿Cerrar el contador de cofres?\n\nTus próximas partidas solo se contarán cuando se vuelva a abrir."),
+                "¿Cerrar el contador de cofres?\n\nTus próximas partidas solo se contarán cuando se vuelva a abrir.", "宝箱カウンターを閉じますか？\n\n次の試合は、もう一度開いたときにだけ集計されます。"),
             closeTitle: () => appName,
-            openText: () => L.T("Ouvrir", "Open", "Abrir"),
-            quitText: () => L.T("Fermer le compteur", "Close the counter", "Cerrar el contador"),
+            openText: () => L.T("Ouvrir", "Open", "Abrir", "開く"),
+            quitText: () => L.T("Fermer le compteur", "Close the counter", "Cerrar el contador", "カウンターを閉じる"),
             trayNotice: () => L.T("Le compteur continue de compter dans la zone de notification, à côté de l'horloge, en bas à droite de la barre des tâches (icône du coffre, parfois derrière la petite flèche ^). Clique dessus pour le rouvrir.",
                 "The counter keeps counting in the notification area, next to the clock, at the bottom right of the taskbar (chest icon, sometimes behind the small ^ arrow). Click it to open it again.",
-                "El contador sigue contando en el área de notificación, junto al reloj, abajo a la derecha de la barra de tareas (icono del cofre, a veces detrás de la pequeña flecha ^). Haz clic en él para volver a abrirlo."));
+                "El contador sigue contando en el área de notificación, junto al reloj, abajo a la derecha de la barra de tareas (icono del cofre, a veces detrás de la pequeña flecha ^). Haz clic en él para volver a abrirlo.", "カウンターはタスクバー右下の時計の横にある通知領域（宝箱アイコン。小さな ^ 矢印の中にある場合もあります）でカウントを続けます。クリックすると再び開きます。"));
     }
     else if (!auto)
     {
@@ -449,7 +459,7 @@ while (!quit)
         }
         catch (Exception ex)
         {
-            Console.WriteLine(L.T($"Erreur pendant la surveillance : {ex.Message}", $"Error while watching: {ex.Message}", $"Error durante la vigilancia: {ex.Message}"));
+            Console.WriteLine(L.T($"Erreur pendant la surveillance : {ex.Message}", $"Error while watching: {ex.Message}", $"Error durante la vigilancia: {ex.Message}", $"監視中のエラー: {ex.Message}"));
         }
         // A replay being written: check again soon. Otherwise only a safety scan once a minute.
         nextScan = DateTime.UtcNow.AddSeconds(tracker.IsFinishing ? 2 : tracker.HasPending ? 15 : (watcher != null && !auto ? 60 : 10));
@@ -498,7 +508,7 @@ while (!quit)
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine(L.T($"Nouvelle version {pendingUpdate.Version.ToString(3)} disponible : ses nouveautés sont affichées dans l'accueil.",
                 $"New version {pendingUpdate.Version.ToString(3)} available: what's new is shown on the home tab.",
-                $"Nueva versión {pendingUpdate.Version.ToString(3)} disponible: las novedades se muestran en el inicio."));
+                $"Nueva versión {pendingUpdate.Version.ToString(3)} disponible: las novedades se muestran en el inicio.", $"新しいバージョン {pendingUpdate.Version.ToString(3)} があります。新機能はホームに表示されます。"));
             Console.ResetColor();
         }
     }
@@ -599,7 +609,7 @@ void ToggleStartWithFortnite()
     Console.ForegroundColor = ConsoleColor.Red;
     Console.WriteLine(L.T("Ouvrir avec Fortnite : impossible ici, lance le compteur depuis ChestCounter.exe.",
         "Open with Fortnite: not possible here, run the counter from ChestCounter.exe.",
-        "Abrir con Fortnite: no es posible aquí, abre el contador desde ChestCounter.exe."));
+        "Abrir con Fortnite: no es posible aquí, abre el contador desde ChestCounter.exe.", "Fortniteと一緒に起動: ここでは使えません。ChestCounter.exe からカウンターを起動してください。"));
     Console.ResetColor();
 }
 
@@ -680,15 +690,15 @@ string? UninstallNow(bool deleteData)
 // Manual check: asks GitHub now (a version may have come out since the counter was opened).
 void CheckForUpdate()
 {
-    Console.WriteLine(L.T("Recherche d'une nouvelle version sur GitHub…", "Checking GitHub for a new version…", "Buscando una nueva versión en GitHub…"));
+    Console.WriteLine(L.T("Recherche d'une nouvelle version sur GitHub…", "Checking GitHub for a new version…", "Buscando una nueva versión en GitHub…", "GitHubで新しいバージョンを確認中…"));
     var (found, reached) = Updater.CheckDetailedAsync().GetAwaiter().GetResult();
     if (found == null)
     {
         Console.WriteLine(reached
-            ? L.T($"Tu as déjà la dernière version ({AppInfo.VersionText}).", $"You already have the latest version ({AppInfo.VersionText}).", $"Ya tienes la última versión ({AppInfo.VersionText}).")
+            ? L.T($"Tu as déjà la dernière version ({AppInfo.VersionText}).", $"You already have the latest version ({AppInfo.VersionText}).", $"Ya tienes la última versión ({AppInfo.VersionText}).", $"最新バージョン（{AppInfo.VersionText}）を使用中です。")
             : L.T("GitHub est injoignable pour l'instant (pas de connexion ?) : réessaie plus tard.",
                 "GitHub cannot be reached right now (no connection?): try again later.",
-                "No se puede acceder a GitHub ahora mismo (¿sin conexión?): inténtalo más tarde."));
+                "No se puede acceder a GitHub ahora mismo (¿sin conexión?): inténtalo más tarde.", "現在GitHubに接続できません（オフライン？）。しばらくしてからもう一度お試しください。"));
         return;
     }
     Volatile.Write(ref update, found);
@@ -698,19 +708,19 @@ void CheckForUpdate()
 void InstallUpdate(UpdateInfo u)
 {
     Console.ForegroundColor = ConsoleColor.Cyan;
-    Console.WriteLine(L.T($"Téléchargement de la version {u.Version.ToString(3)}…", $"Downloading version {u.Version.ToString(3)}…", $"Descargando la versión {u.Version.ToString(3)}…"));
+    Console.WriteLine(L.T($"Téléchargement de la version {u.Version.ToString(3)}…", $"Downloading version {u.Version.ToString(3)}…", $"Descargando la versión {u.Version.ToString(3)}…", $"バージョン {u.Version.ToString(3)} をダウンロード中…"));
     Console.ResetColor();
     var error = Updater.Install(u);
     if (error != null)
     {
         Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine(L.T($"Mise à jour impossible : {error}", $"Update failed: {error}", $"No se pudo actualizar: {error}"));
+        Console.WriteLine(L.T($"Mise à jour impossible : {error}", $"Update failed: {error}", $"No se pudo actualizar: {error}", $"アップデートに失敗しました: {error}"));
         Console.ResetColor();
-        Console.WriteLine(L.T($"Tu peux la télécharger à la main : {u.PageUrl}", $"You can download it manually: {u.PageUrl}", $"Puedes descargarla a mano: {u.PageUrl}"));
+        Console.WriteLine(L.T($"Tu peux la télécharger à la main : {u.PageUrl}", $"You can download it manually: {u.PageUrl}", $"Puedes descargarla a mano: {u.PageUrl}", $"手動でダウンロードできます: {u.PageUrl}"));
         return;
     }
     Console.ForegroundColor = ConsoleColor.Green;
-    Console.WriteLine(L.T("Mise à jour installée : redémarrage du compteur…", "Update installed: restarting the counter…", "Actualización instalada: reiniciando el contador…"));
+    Console.WriteLine(L.T("Mise à jour installée : redémarrage du compteur…", "Update installed: restarting the counter…", "Actualización instalada: reiniciando el contador…", "アップデートをインストールしました。カウンターを再起動します…"));
     Console.ResetColor();
     restart = true;
     quit = true;
@@ -726,7 +736,7 @@ void AnnounceNewProfiles()
     Console.ForegroundColor = ConsoleColor.DarkYellow;
     Console.WriteLine(L.T("Plusieurs comptes Fortnite ont enregistré des replays sur ce PC : chacun a son profil. Choisis le tien en haut de la fenêtre, à côté du nom.",
         "Several Fortnite accounts recorded replays on this PC: each one has its own profile. Choose yours at the top of the window, next to the name.",
-        "Varias cuentas de Fortnite grabaron repeticiones en este PC: cada una tiene su perfil. Elige la tuya arriba de la ventana, junto al nombre."));
+        "Varias cuentas de Fortnite grabaron repeticiones en este PC: cada una tiene su perfil. Elige la tuya arriba de la ventana, junto al nombre.", "このPCでは複数のFortniteアカウントがリプレイを記録しています。アカウントごとにプロフィールがあります。ウィンドウ上部の名前の横で自分のものを選んでください。"));
     Console.ResetColor();
 }
 
@@ -783,7 +793,7 @@ void CheckReplaysRecorded()
     Console.ForegroundColor = ConsoleColor.Yellow;
     Console.WriteLine(L.T("Fortnite est ouvert depuis 40 minutes et aucun replay n'a été enregistré. Si tu as joué des parties, vérifie dans Fortnite  Paramètres → Jeu → Rediffusions → Enregistrer les rediffusions.",
         "Fortnite has been open for 40 minutes and no replay was recorded. If you played matches, check in Fortnite  Settings → Game → Replays → Record Replays.",
-        "Fortnite lleva 40 minutos abierto y no se ha grabado ninguna repetición. Si has jugado partidas, comprueba en Fortnite  Ajustes → Juego → Repeticiones → Grabar repeticiones."));
+        "Fortnite lleva 40 minutos abierto y no se ha grabado ninguna repetición. Si has jugado partidas, comprueba en Fortnite  Ajustes → Juego → Repeticiones → Grabar repeticiones.", "Fortniteを40分間起動していますが、リプレイが記録されていません。試合をプレイした場合は、Fortniteの 設定 → ゲーム → リプレイ → リプレイを記録 を確認してください。"));
     Console.ResetColor();
 }
 
@@ -847,29 +857,29 @@ object BuildGuiState()
     if (autoCloseAt is { } closeAt)
     {
         kind = "busy";
-        text = L.T($"Fortnite est fermé : le compteur se ferme dans {Math.Max(0, (int)Math.Ceiling((closeAt - DateTime.UtcNow).TotalSeconds))} s", $"Fortnite is closed: the counter closes in {Math.Max(0, (int)Math.Ceiling((closeAt - DateTime.UtcNow).TotalSeconds))} s", $"Fortnite está cerrado: el contador se cierra en {Math.Max(0, (int)Math.Ceiling((closeAt - DateTime.UtcNow).TotalSeconds))} s");
+        text = L.T($"Fortnite est fermé : le compteur se ferme dans {Math.Max(0, (int)Math.Ceiling((closeAt - DateTime.UtcNow).TotalSeconds))} s", $"Fortnite is closed: the counter closes in {Math.Max(0, (int)Math.Ceiling((closeAt - DateTime.UtcNow).TotalSeconds))} s", $"Fortnite está cerrado: el contador se cierra en {Math.Max(0, (int)Math.Ceiling((closeAt - DateTime.UtcNow).TotalSeconds))} s", $"Fortniteが終了しました: カウンターは {Math.Max(0, (int)Math.Ceiling((closeAt - DateTime.UtcNow).TotalSeconds))} 秒後に閉じます");
     }
     else if (tracker.IsLive)
     {
         kind = "live";
         text = tracker.LiveMatch is { } live
-            ? L.T($"Partie en cours : {L.Count(live.ChestsOpened, "coffre", "chest", "cofre")}", $"Match in progress: {L.Count(live.ChestsOpened, "coffre", "chest", "cofre")}", $"Partida en curso: {L.Count(live.ChestsOpened, "coffre", "chest", "cofre")}")
-            : L.T("Partie en cours", "Match in progress", "Partida en curso");
+            ? L.T($"Partie en cours : {L.Count(live.ChestsOpened, "coffre", "chest", "cofre", "{0}個")}", $"Match in progress: {L.Count(live.ChestsOpened, "coffre", "chest", "cofre", "{0}個")}", $"Partida en curso: {L.Count(live.ChestsOpened, "coffre", "chest", "cofre", "{0}個")}", $"試合中: 宝箱 {L.N(live.ChestsOpened)} 個")
+            : L.T("Partie en cours", "Match in progress", "Partida en curso", "試合中");
     }
     else if (tracker.IsFinishing || tracker.HasPending || ReportWriter.Progress != null)
     {
         kind = "busy";
-        text = L.T("Comptage des coffres…", "Counting the chests…", "Contando los cofres…");
+        text = L.T("Comptage des coffres…", "Counting the chests…", "Contando los cofres…", "宝箱を集計中…");
     }
     else if (!Directory.Exists(config.DemosFolder))
     {
         kind = "warn";
-        text = L.T("Dossier des replays introuvable", "Replays folder not found", "Carpeta de repeticiones no encontrada");
+        text = L.T("Dossier des replays introuvable", "Replays folder not found", "Carpeta de repeticiones no encontrada", "リプレイのフォルダーが見つかりません");
     }
     else
     {
         kind = "";
-        text = L.T("En attente d'une partie", "Waiting for a match", "Esperando una partida");
+        text = L.T("En attente d'une partie", "Waiting for a match", "Esperando una partida", "試合を待っています");
     }
 
     var last = matches.OrderByDescending(m => m.MatchStartUtc ?? m.AnalyzedAtUtc).FirstOrDefault();
@@ -908,10 +918,10 @@ object BuildGuiState()
             chests = (e.Chests > 0 ? "+" : "") + L.N(e.Chests),
             what = e.Kind switch
             {
-                ManualEntry.Estimate => L.T($"estimation · {L.N(e.CareerMatches ?? 0)} parties", $"estimate · {L.N(e.CareerMatches ?? 0)} matches", $"estimación · {L.N(e.CareerMatches ?? 0)} partidas"),
-                ManualEntry.Earlier => L.T("ajouts précédents", "earlier additions", "añadidos anteriores"),
+                ManualEntry.Estimate => L.T($"estimation · {L.N(e.CareerMatches ?? 0)} parties", $"estimate · {L.N(e.CareerMatches ?? 0)} matches", $"estimación · {L.N(e.CareerMatches ?? 0)} partidas", $"見積もり · {L.N(e.CareerMatches ?? 0)} 試合"),
+                ManualEntry.Earlier => L.T("ajouts précédents", "earlier additions", "añadidos anteriores", "以前の追加分"),
                 _ => TreasureCatalog.Weeks.FirstOrDefault(w => w.From == e.WeekFromUtc) is { } wk
-                    ? L.T($"semaine {wk.Number}", $"week {wk.Number}", $"semana {wk.Number}")
+                    ? L.T($"semaine {wk.Number}", $"week {wk.Number}", $"semana {wk.Number}", $"第{wk.Number}週")
                     : "",
             },
             when = e.AddedUtc is { } added ? L.DateTimeShort(L.Shown(added)) : "",
@@ -1032,7 +1042,7 @@ object? RunGuiAction(string name, System.Text.Json.JsonElement value)
             {
                 config.Language = code;
                 L.Set(code);
-                appName = L.T("Compteur de coffres Fortnite", "Fortnite Chest Counter", "Contador de cofres de Fortnite");
+                appName = L.T("Compteur de coffres Fortnite", "Fortnite Chest Counter", "Contador de cofres de Fortnite", "Fortnite 宝箱カウンター");
             }
             break;
         case "profile": if (Profiles.List(data).Any(p => p.Key == Str())) config.Profile = Str(); break;
@@ -1113,7 +1123,7 @@ object? RunGuiAction(string name, System.Text.Json.JsonElement value)
                     chestsText = L.N(e.Chests),
                     text = L.T($"({L.N(e.CareerMatches)} − {L.N(e.CountedMatches)} déjà comptées) × {avg} coffres en moyenne = {L.N(e.Chests)} coffres (remplace l'estimation précédente)",
                         $"({L.N(e.CareerMatches)} − {L.N(e.CountedMatches)} already counted) × {avg} chests on average = {L.N(e.Chests)} chests (replaces the previous estimate)",
-                        $"({L.N(e.CareerMatches)} − {L.N(e.CountedMatches)} ya contadas) × {avg} cofres de media = {L.N(e.Chests)} cofres (sustituye la estimación anterior)"),
+                        $"({L.N(e.CareerMatches)} − {L.N(e.CountedMatches)} ya contadas) × {avg} cofres de media = {L.N(e.Chests)} cofres (sustituye la estimación anterior)", $"（{L.N(e.CareerMatches)} − 集計済み {L.N(e.CountedMatches)}）× 平均 {avg} 個 = 宝箱 {L.N(e.Chests)} 個（以前の見積もりを置き換えます）"),
                 };
             }
             else
@@ -1192,6 +1202,6 @@ static void Open(string path)
     }
     catch
     {
-        Console.WriteLine(L.T($"Ouvre ce fichier dans ton navigateur : {path}", $"Open this file in your browser: {path}", $"Abre este archivo en tu navegador: {path}"));
+        Console.WriteLine(L.T($"Ouvre ce fichier dans ton navigateur : {path}", $"Open this file in your browser: {path}", $"Abre este archivo en tu navegador: {path}", $"このファイルをブラウザーで開いてください: {path}"));
     }
 }

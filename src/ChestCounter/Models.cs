@@ -31,7 +31,7 @@ public sealed class TreasureFind
     public bool TimeExact { get; set; }
     /// <summary>True when the source chest was destroyed rather than opened.</summary>
     public bool SourceDestroyed { get; set; }
-    public string SourceLabel => SourceDestroyed ? $"{L.Name(SourceKind)} ({L.T("détruit", "destroyed", "destruido")})" : L.Name(SourceKind);
+    public string SourceLabel => SourceDestroyed ? $"{L.Name(SourceKind)} ({L.T("détruit", "destroyed", "destruido", "破壊")})" : L.Name(SourceKind);
     /// <summary>When it was obtained (replay seconds). Exact for golden chests, estimated otherwise.</summary>
     public float? ObtainedAtSeconds { get; set; }
     /// <summary>Kind of container / interaction it came from (Coffre, Canon à butin...).</summary>
@@ -361,7 +361,7 @@ public sealed class Store
             // Keep a copy of the unreadable file rather than silently losing the history.
             var backup = path + $".corrupt-{DateTime.Now:yyyyMMdd-HHmmss}";
             File.Copy(path, backup, overwrite: true);
-            Console.WriteLine(L.T($"Fichier illisible ({ex.Message}), copie de sauvegarde : {backup}", $"Unreadable file ({ex.Message}), backup copy: {backup}", $"Archivo ilegible ({ex.Message}), copia de seguridad: {backup}"));
+            Console.WriteLine(L.T($"Fichier illisible ({ex.Message}), copie de sauvegarde : {backup}", $"Unreadable file ({ex.Message}), backup copy: {backup}", $"Archivo ilegible ({ex.Message}), copia de seguridad: {backup}", $"読み込めないファイルです（{ex.Message}）。バックアップ: {backup}"));
 
             return null;
         }
