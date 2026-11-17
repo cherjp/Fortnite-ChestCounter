@@ -1234,8 +1234,8 @@ public static class ReportWriter
         return $"""<div class="profiles muted">{L.T("Autres profils sur ce PC : ", "Other profiles on this PC: ", "Otros perfiles en este PC: ", "このPCの他のプロフィール: ")}{string.Join(", ", others)} · {L.T("« Changer de profil » dans le compteur", "\"Switch profile\" in the counter", "«Cambiar de perfil» en el contador", "カウンター上部のプロフィール選択")}</div>""";
     }
 
-    /// <summary>Style of the OBS page: the one chosen for the overlay ("hud" or "classic").</summary>
-    public static volatile string OverlayStyle = "hud";
+    /// <summary>Style of the OBS page: the one chosen for the overlay ("card", "hud" or "classic").</summary>
+    public static volatile string OverlayStyle = "card";
 
     /// <summary>What the overlay shows right now (also written by <see cref="WriteAll"/>, so that the OBS page never goes back).</summary>
     private static volatile OverlayView? LastOverlay;
@@ -1254,7 +1254,12 @@ public static class ReportWriter
         }
     }
 
-    public static string Overlay(OverlayView v) => OverlayStyle == "classic" ? OverlayClassic(v) : OverlayHud(v);
+    public static string Overlay(OverlayView v) => OverlayStyle switch
+    {
+        "classic" => OverlayClassic(v),
+        "hud" => OverlayHud(v),
+        _ => OverlayCard(v),
+    };
 
     /// <summary>
     /// The HUD overlay as a web page, for OBS ("Browser" source, local file): transparent, figures outlined like the
@@ -1289,6 +1294,42 @@ public static class ReportWriter
             {{squad}}
             <div class="r t"><span class="star">★</span><b>{{H(v.Treasures)}}</b></div>
             </body></html>
+            """;
+    }
+
+    /// <summary>The "card" overlay as a web page, for OBS: the chest, "CHESTS ----" over the total, the other figures beside it.</summary>
+    private static string OverlayCard(OverlayView v)
+    {
+        var live = v.CurrentLive && v.Current is { } c && c != "…";
+        static string Row(string label, string value, bool treasure = false) =>
+            $"<div class=\"r{(treasure ? " t" : "")}\"><span>{H(label)}</span><b>{(treasure ? "<i>★</i> " : "")}{H(value)}</b></div>";
+        var rows = Row(L.T("Dernière", "Last", "Última", "前回"), v.Last ?? "—")
+            + Row(L.T("Session", "Session", "Sesión", "セッション"), v.Session)
+            + (v.Squad != null ? Row(OverlayModel.SquadLabel, v.Squad) : "")
+            + Row(L.T("Trésors", "Treasures", "Tesoros", "お宝"), v.Treasures, treasure: true);
+        return $$"""
+            <!doctype html><html lang="{{L.Code}}"><head><meta charset="utf-8"><meta http-equiv="refresh" content="5">
+            <title>{{L.T("Overlay coffres", "Chest overlay", "Overlay de cofres", "宝箱オーバーレイ")}}</title>
+            <style>
+            html,body{margin:0;background:transparent}
+            body{padding:4px;display:inline-block;font-family:"Segoe UI","Yu Gothic UI",system-ui,sans-serif}
+            .card{display:flex;align-items:center;gap:14px;padding:14px 18px 14px 14px;border-radius:14px;background:#14171f;border:1px solid #5c6070;color:#fafafc}
+            .chest{width:72px;height:72px;flex:none}
+            .head{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px}
+            .head .line{flex:1;min-width:40px;height:2px;background:#969aa8}
+            .head .live{color:#ff6358;display:flex;align-items:center;gap:6px}.head .live i{width:9px;height:9px;border-radius:50%;background:#ff3b30}
+            .body{display:flex;align-items:center;gap:16px;margin-top:2px}
+            .total{font-family:Bahnschrift,"Segoe UI",sans-serif;font-weight:700;font-size:52px;line-height:1}
+            .total.gold{color:#ffd23f}
+            .rows{border-left:1px solid #404452;padding-left:16px;display:grid;gap:1px}
+            .r{display:flex;justify-content:space-between;gap:14px;font-size:13px;color:#969aa8;font-weight:600}
+            .r b{color:#fafafc;font:700 17px Bahnschrift,"Segoe UI",sans-serif}
+            .r.t b{color:#d6beff}.r.t i{font-style:normal;color:#c49bff}
+            </style></head><body><div class="card">
+            <svg class="chest" viewBox="0 0 56 56" aria-hidden="true"><path d="M6 26 Q28 4 50 26" fill="#965d27" stroke="#e7b440" stroke-width="3"/><rect x="6" y="20" width="44" height="28" rx="4" fill="#7a4a1e" stroke="#e7b440" stroke-width="3"/><line x1="6" y1="30" x2="50" y2="30" stroke="#e7b440" stroke-width="3"/><rect x="24" y="24" width="8" height="10" rx="2" fill="#e7b440"/></svg>
+            <div><div class="head"><span>{{H(L.T("COFFRES", "CHESTS", "COFRES", "宝箱"))}}</span><span class="line"></span>{{(v.CurrentLive ? $"<span class=\"live\"><i></i>{H(L.T("EN COURS", "IN MATCH", "EN CURSO", "試合中"))}</span>" : "")}}</div>
+            <div class="body"><div class="total{{(live ? " gold" : "")}}">{{H(v.Total)}}</div><div class="rows">{{rows}}</div></div></div>
+            </div></body></html>
             """;
     }
 

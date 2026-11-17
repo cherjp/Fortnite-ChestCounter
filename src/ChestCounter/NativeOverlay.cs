@@ -44,28 +44,36 @@ public static class NativeOverlay
     private static volatile int _sizePercent = 100;
     private static volatile int _opacityPercent = 100;
 
-    /// <summary>"hud" (figures only, under the minimap, like the game's HUD) or "classic" (dark card).</summary>
+    /// <summary>
+    /// "card" (the chest, the total and the other figures beside it on a dark rounded card), "hud" (figures only, under
+    /// the minimap, like the game's HUD) or "classic" (dark card with two counters).
+    /// </summary>
     private static volatile string _style = "classic";
     private static IntPtr _fontHudBig, _fontHudSmall;
+    private static IntPtr _fontCardHead, _fontCardBig, _fontCardLabel, _fontCardValue, _chestIcon;
+    private static int _cardHeadH, _cardBigH, _cardBigW, _cardRowH, _cardLabelW, _cardValueW, _cardIcon;
+    private const int CardIcon = 72;
     private static int _hudBigH, _hudSmallH;
 
     /// <summary>Pixels of this color are fully transparent (styles without a background). Almost black, so that the
     /// anti-aliased edge of the black outline around the text blends into it without any colored fringe.</summary>
     private static readonly uint KeyColor = 0x00010001;
 
-    public static string[] Styles => new[] { "hud", "classic" };
+    public static string[] Styles => new[] { "card", "hud", "classic" };
 
     /// <summary>Changes the look of the overlay at once.</summary>
     public static void SetStyle(string style)
     {
-        _style = Array.IndexOf(Styles, style) >= 0 ? style : "hud";
+        _style = Array.IndexOf(Styles, style) >= 0 ? style : "card";
         if (_hwnd != IntPtr.Zero)
         {
             PostMessageW(_hwnd, WM_APP_APPEARANCE, IntPtr.Zero, IntPtr.Zero);
         }
     }
 
-    private static bool Keyed => _style != "classic";
+    private static bool Keyed => _style == "hud";
+
+    private static bool Card => _style == "card";
 
     private const int MinWidth = 240, Pad = 16, ColGap = 36;
 
@@ -267,7 +275,7 @@ public static class NativeOverlay
     /// <summary>(Re)creates the fonts for the current display scaling and chosen size.</summary>
     private static void CreateFonts()
     {
-        foreach (var old in new[] { _fontBig, _fontSmall, _fontHeader, _fontCaption, _fontLabel, _fontIcon, _fontHudBig, _fontHudSmall })
+        foreach (var old in new[] { _fontBig, _fontSmall, _fontHeader, _fontCaption, _fontLabel, _fontIcon, _fontHudBig, _fontHudSmall, _fontCardHead, _fontCardBig, _fontCardLabel, _fontCardValue })
         {
             if (old != IntPtr.Zero) DeleteObject(old);
         }
@@ -284,6 +292,17 @@ public static class NativeOverlay
         // Game-like styles: condensed italic, grayscale anti-aliasing (ClearType would leave colored edges once the
         // background is made transparent).
         _fontHudBig = CreateFontW(-S(40), 0, 0, 0, 700, 1, 0, 0, 1, 0, 0, 4, 0, "Bahnschrift Condensed");
+        // "card" style: bold heading, big total, small rows beside it.
+        _fontCardHead = CreateFontW(-S(15), 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, ui);
+        _fontCardBig = CreateFontW(-S(50), 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, "Bahnschrift");
+        _fontCardLabel = CreateFontW(-S(13), 0, 0, 0, 600, 0, 0, 0, 1, 0, 0, 5, 0, ui);
+        _fontCardValue = CreateFontW(-S(17), 0, 0, 0, 700, 0, 0, 0, 1, 0, 0, 5, 0, "Bahnschrift");
+        if (_chestIcon != IntPtr.Zero)
+        {
+            DestroyIcon(_chestIcon);
+        }
+        // The chest of the app's icon (resource 32512 of ChestCounter.exe), at the size it is drawn.
+        _chestIcon = LoadImageW(GetModuleHandleW(null), (IntPtr)32512, 1 /* IMAGE_ICON */, S(CardIcon), S(CardIcon), 0);
         _fontHudSmall = CreateFontW(-S(18), 0, 0, 0, L.Ja ? 700 : 600, 1, 0, 0, 1, 0, 0, 4, 0, L.Ja ? "Yu Gothic UI" : "Bahnschrift SemiCondensed");
     }
 
@@ -438,6 +457,11 @@ public static class NativeOverlay
     /// <summary>Measures the text and resizes the window (and its rounded region) to fit it.</summary>
     private static void Relayout(IntPtr hwnd)
     {
+        if (Card)
+        {
+            RelayoutCard(hwnd);
+            return;
+        }
         if (Keyed)
         {
             RelayoutStyled(hwnd);
@@ -531,6 +555,11 @@ public static class NativeOverlay
 
     private static void PaintTo(IntPtr hwnd, IntPtr hdc)
     {
+        if (Card)
+        {
+            PaintCard(hwnd, hdc);
+            return;
+        }
         if (Keyed)
         {
             PaintStyled(hwnd, hdc);
@@ -830,6 +859,182 @@ public static class NativeOverlay
         Star(hdc, right - tw - Sc(12), y + rowH / 2, Sc(8), Rgb(196, 155, 255), ink);
     }
 
+    // ---- "card" style: the chest, then "CHESTS ----" over the big total, the other figures on its right ------------
+    //
+    //   [chest]  宝箱 --------------------- (● 試合中)
+    //   [chest]  3,934  |  前回        14
+    //                   |  セッション  83
+    //                   |  お宝      ★ 36
+
+    private static List<(string Label, string Value, bool Treasure)> CardRows(OverlayView v)
+    {
+        var rows = new List<(string, string, bool)>
+        {
+            (StateRow(v).Label, StateRow(v).Value, false),
+            (L.T("Session", "Session", "Sesión", "セッション"), v.Session, false),
+        };
+        if (v.Squad != null)
+        {
+            rows.Add((OverlayModel.SquadLabel, v.Squad, false));
+        }
+        rows.Add((L.T("Trésors", "Treasures", "Tesoros", "お宝"), v.Treasures, true));
+        return rows;
+    }
+
+    private static string CardBadge => L.T("EN COURS", "IN MATCH", "EN CURSO", "試合中");
+
+    private static void RelayoutCard(IntPtr hwnd)
+    {
+        var v = _view;
+        var hdc = GetDC(hwnd);
+        int w, h;
+        try
+        {
+            var pad = Sc(14);
+            var rows = CardRows(v);
+            // Room for the in-match badge and the padlock is always kept: the card does not widen when a match starts.
+            var headW = TextWidth(hdc, _fontCardHead, Header, out _cardHeadH) + Sc(40) + TextWidth(hdc, _fontCardHead, CardBadge, out _) + Sc(16) + Sc(22);
+            _cardBigW = TextWidth(hdc, _fontCardBig, v.Total, out _cardBigH);
+            _cardLabelW = 0;
+            _cardValueW = 0;
+            _cardRowH = 0;
+            foreach (var (label, value, treasure) in rows)
+            {
+                _cardLabelW = Math.Max(_cardLabelW, TextWidth(hdc, _fontCardLabel, label, out var lh));
+                _cardValueW = Math.Max(_cardValueW, TextWidth(hdc, _fontCardValue, value, out var vh) + (treasure ? Sc(18) : 0));
+                _cardRowH = Math.Max(_cardRowH, Math.Max(lh, vh));
+            }
+            var bodyH = Math.Max(_cardBigH, rows.Count * _cardRowH);
+            var contentH = _cardHeadH + Sc(4) + bodyH;
+            _cardIcon = Math.Max(Sc(CardIcon), Math.Min(contentH, Sc(CardIcon * 3 / 2)));
+            var bodyW = _cardBigW + Sc(18) + 1 + Sc(16) + _cardLabelW + Sc(14) + _cardValueW;
+            w = pad + _cardIcon + Sc(14) + Math.Max(headW, bodyW) + pad;
+            h = pad + Math.Max(_cardIcon, contentH) + pad;
+            w = Math.Max(_stableW, w);
+            _stableW = w;
+            _lockRect = new RECT { Left = w - Sc(30), Top = Sc(4), Right = w - Sc(6), Bottom = Sc(28) };
+
+            GetWindowRect(hwnd, out var cur);
+            int nx = cur.Left, ny = cur.Top;
+            var mi = new MONITORINFO { cbSize = (uint)Marshal.SizeOf<MONITORINFO>() };
+            if (!_offscreen && GetMonitorInfoW(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), ref mi))
+            {
+                var work = mi.rcWork;
+                if (cur.Right - cur.Left > 0 && (cur.Left + cur.Right) / 2 > (work.Left + work.Right) / 2)
+                {
+                    nx = cur.Right - w; // anchored on the right edge
+                }
+                nx = Math.Max(work.Left, Math.Min(nx, work.Right - w));
+                ny = Math.Max(work.Top, Math.Min(ny, work.Bottom - h));
+            }
+            SetWindowPos(hwnd, HWND_TOPMOST, nx, ny, w, h, SWP_NOACTIVATE);
+            SetWindowRgn(hwnd, CreateRoundRectRgn(0, 0, w + 1, h + 1, Sc(16), Sc(16)), true);
+            if (nx != cur.Left || ny != cur.Top)
+            {
+                _onMoved?.Invoke(nx, ny);
+            }
+        }
+        finally
+        {
+            ReleaseDC(hwnd, hdc);
+        }
+        InvalidateRect(hwnd, IntPtr.Zero, true);
+        UpdateWindow(hwnd);
+    }
+
+    private static void PaintCard(IntPtr hwnd, IntPtr hdc)
+    {
+        var v = _view;
+        var rows = CardRows(v);
+        GetClientRect(hwnd, out var rc);
+        var bg = CreateSolidBrush(Rgb(20, 23, 31));
+        FillRect(hdc, ref rc, bg);
+        DeleteObject(bg);
+        SetBkMode(hdc, TRANSPARENT);
+        var pad = Sc(14);
+        var white = Rgb(250, 250, 252);
+        var grey = Rgb(150, 154, 168);
+        var gold = Rgb(255, 210, 63);
+        var live = LiveFigures(v);
+
+        // Frame: a thin light line along the rounded shape.
+        var frame = CreateRoundRectRgn(0, 0, rc.Right + 1, rc.Bottom + 1, Sc(16), Sc(16));
+        var frameBrush = CreateSolidBrush(Rgb(92, 96, 112));
+        FrameRgn(hdc, frame, frameBrush, 1, 1);
+        DeleteObject(frameBrush);
+        DeleteObject(frame);
+
+        // The chest, vertically centered (drawn with GDI when the icon cannot be loaded).
+        var iconY = (rc.Bottom - _cardIcon) / 2;
+        if (_chestIcon != IntPtr.Zero)
+        {
+            DrawIconEx(hdc, pad, iconY, _chestIcon, _cardIcon, _cardIcon, 0, IntPtr.Zero, 3 /* DI_NORMAL */);
+        }
+        else
+        {
+            Chest(hdc, pad, iconY + _cardIcon / 8, _cardIcon, _cardIcon * 3 / 4, Rgb(122, 74, 30), Rgb(150, 93, 39), Rgb(231, 180, 64), Rgb(231, 180, 64));
+        }
+
+        var x = pad + _cardIcon + Sc(14);
+        var right = rc.Right - pad;
+        var bodyH = Math.Max(_cardBigH, rows.Count * _cardRowH);
+        var contentH = _cardHeadH + Sc(4) + bodyH;
+        var y = (rc.Bottom - contentH) / 2;
+
+        // Heading "宝箱 ----" (the line stops before the in-match badge and the padlock).
+        var headW = TextWidth(hdc, _fontCardHead, Header, out _);
+        Text(hdc, _fontCardHead, white, Header, x, y, x + headW + Sc(4), y + _cardHeadH);
+        var lineEnd = !_locked ? _lockRect.Left - Sc(6) : right;
+        if (v.CurrentLive)
+        {
+            var badgeW = TextWidth(hdc, _fontCardHead, CardBadge, out _);
+            Text(hdc, _fontCardHead, Rgb(255, 99, 88), CardBadge, lineEnd - badgeW, y, lineEnd + Sc(2), y + _cardHeadH);
+            var d = Sc(9);
+            Disc(hdc, lineEnd - badgeW - Sc(6) - d, y + (_cardHeadH - d) / 2, d, Rgb(255, 59, 48), Rgb(255, 59, 48), 1);
+            lineEnd -= badgeW + Sc(6) + d + Sc(10);
+        }
+        var lineY = y + _cardHeadH / 2;
+        var line = new RECT { Left = x + headW + Sc(10), Top = lineY, Right = Math.Max(x + headW + Sc(10), lineEnd), Bottom = lineY + Math.Max(1, Sc(1.5)) };
+        var lineBrush = CreateSolidBrush(grey);
+        FillRect(hdc, ref line, lineBrush);
+        DeleteObject(lineBrush);
+        if (!_locked)
+        {
+            SelectObject(hdc, _fontIcon);
+            SetTextColor(hdc, Rgb(200, 200, 208));
+            var lr = _lockRect;
+            DrawTextW(hdc, "\uE785", -1, ref lr, DT_SINGLELINE | DT_CENTER | DT_VCENTER | DT_NOPREFIX);
+        }
+        y += _cardHeadH + Sc(4);
+
+        // The big total (gold while the match in progress is counted live).
+        Text(hdc, _fontCardBig, live ? gold : white, v.Total, x - Sc(2), y + (bodyH - _cardBigH) / 2, x + _cardBigW + Sc(6), y + (bodyH + _cardBigH) / 2);
+
+        // A thin divider, then the other figures: last match, session, (squad), treasures.
+        var dx = x + _cardBigW + Sc(18);
+        var divider = new RECT { Left = dx, Top = y + Sc(4), Right = dx + 1, Bottom = y + bodyH - Sc(4) };
+        var divBrush = CreateSolidBrush(Rgb(64, 68, 82));
+        FillRect(hdc, ref divider, divBrush);
+        DeleteObject(divBrush);
+        var lx = dx + 1 + Sc(16);
+        var vx = lx + _cardLabelW + Sc(14);
+        var ry = y + (bodyH - rows.Count * _cardRowH) / 2;
+        foreach (var (label, value, treasure) in rows)
+        {
+            Text(hdc, _fontCardLabel, grey, label, lx, ry, lx + _cardLabelW + Sc(4), ry + _cardRowH, DT_VCENTER);
+            if (treasure)
+            {
+                Star(hdc, vx + Sc(7), ry + _cardRowH / 2, Sc(7), Rgb(196, 155, 255), Rgb(120, 90, 180));
+                Text(hdc, _fontCardValue, Rgb(214, 190, 255), value, vx + Sc(18), ry, right + Sc(4), ry + _cardRowH, DT_VCENTER);
+            }
+            else
+            {
+                Text(hdc, _fontCardValue, white, value, vx, ry, right + Sc(4), ry + _cardRowH, DT_VCENTER);
+            }
+            ry += _cardRowH;
+        }
+    }
+
     private static uint Rgb(byte r, byte g, byte b) => (uint)(r | (g << 8) | (b << 16));
 
     // ---- Win32 ------------------------------------------------------------------------------
@@ -915,6 +1120,9 @@ public static class NativeOverlay
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int DrawTextW(IntPtr hdc, string text, int count, ref RECT rect, uint format);
     [DllImport("user32.dll")] private static extern UIntPtr SetTimer(IntPtr hwnd, UIntPtr id, uint ms, IntPtr proc);
     [DllImport("user32.dll")] private static extern IntPtr LoadCursorW(IntPtr instance, IntPtr name);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr LoadImageW(IntPtr instance, IntPtr name, uint type, int cx, int cy, uint load);
+    [DllImport("user32.dll")] private static extern bool DrawIconEx(IntPtr hdc, int x, int y, IntPtr icon, int cx, int cy, uint step, IntPtr brush, uint flags);
+    [DllImport("user32.dll")] private static extern bool DestroyIcon(IntPtr icon);
     [DllImport("user32.dll")] private static extern IntPtr GetDC(IntPtr hwnd);
     [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr hwnd, IntPtr hdc);
     [DllImport("user32.dll")] private static extern bool SetProcessDPIAware();

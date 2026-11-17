@@ -203,8 +203,11 @@ public sealed class Config
     /// <summary>Version of the tool the player last used: what's new is shown once after an update.</summary>
     public string? LastVersion { get; set; }
 
-    /// <summary>Look of the overlay: "hud" (figures only, like the game's HUD) or "classic" (dark card).</summary>
-    public string OverlayStyle { get; set; } = "hud";
+    /// <summary>
+    /// Look of the overlay: "card" (the chest and the figures on a dark card), "hud" (figures only, like the game's HUD)
+    /// or "classic" (dark card with two counters).
+    /// </summary>
+    public string OverlayStyle { get; set; } = "card";
     public int? OverlayX { get; set; }
     public int? OverlayY { get; set; }
     /// <summary>Locked overlay = click-through, cannot be moved (Ctrl+Shift+L to toggle).</summary>

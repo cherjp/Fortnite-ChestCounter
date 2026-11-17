@@ -567,7 +567,7 @@ void StartOverlay()
     NativeOverlay.SetAppearance(config.OverlaySize, config.OverlayOpacity);
     if (Array.IndexOf(NativeOverlay.Styles, config.OverlayStyle) < 0)
     {
-        config.OverlayStyle = "hud"; // a style tried in a test version and removed since
+        config.OverlayStyle = "card"; // a style tried in a test version and removed since
     }
     NativeOverlay.SetStyle(config.OverlayStyle);
     NativeOverlay.Start(config.OverlayX, config.OverlayY, config.OverlayLocked,

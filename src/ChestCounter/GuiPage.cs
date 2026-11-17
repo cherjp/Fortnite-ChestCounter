@@ -96,6 +96,7 @@ public static class GuiPage
             "Small always-on-top window that shows your chests in game (Fortnite in \"Windowed Fullscreen\"). Ctrl+Shift+O: show / hide, Ctrl+Shift+L: lock.",
             "Pequeña ventana siempre visible que muestra tus cofres en el juego (Fortnite en «Pantalla completa en ventana»). Ctrl+Mayús+O: mostrar / ocultar, Ctrl+Mayús+L: bloquear.", "ゲーム中に宝箱の数を表示する、常に最前面の小さなウィンドウです（Fortniteは「ウィンドウ フルスクリーン」で使用）。Ctrl+Shift+O: 表示／非表示、Ctrl+Shift+L: 固定。"),
         ["style"] = L.T("Style", "Style", "Estilo", "スタイル"),
+        ["card"] = L.T("Carte (coffre et compteurs)", "Card (chest and counters)", "Tarjeta (cofre y contadores)", "カード（宝箱と数字）"),
         ["hud"] = L.T("HUD (intégré au jeu)", "HUD (blends into the game)", "HUD (integrado en el juego)", "HUD（ゲームになじむ表示）"),
         ["classic"] = L.T("Classique (carte sombre)", "Classic (dark card)", "Clásico (tarjeta oscura)", "クラシック（暗いカード）"),
         ["size"] = L.T("Taille", "Size", "Tamaño", "サイズ"),
@@ -105,9 +106,9 @@ public static class GuiPage
             "Your chests + those of all your teammates (random ones too), on the overlay and the home tab.",
             "Tus cofres + los de todos tus compañeros (también los aleatorios), en el overlay y el inicio.", "あなたの宝箱 + すべてのチームメイト（野良も含む）の宝箱を、オーバーレイとホームに表示します。"),
         ["obs"] = L.T("Overlay pour OBS (stream)", "Overlay for OBS (stream)", "Overlay para OBS (directo)", "OBS用オーバーレイ（配信）"),
-        ["obsSteps"] = L.T("Dans OBS : Sources → + → Navigateur, coche « Fichier local », choisis ce fichier. Largeur 360, hauteur 220 (450 × 300 en classique). Pour ne l'avoir que sur le stream, désactive l'overlay en jeu : la page continue d'être mise à jour.",
-            "In OBS: Sources → + → Browser, tick \"Local file\", pick this file. Width 360, height 220 (450 × 300 for classic). To have it on the stream only, turn the in-game overlay off: the page keeps being updated.",
-            "En OBS: Fuentes → + → Navegador, marca «Archivo local», elige este archivo. Ancho 360, alto 220 (450 × 300 en clásico). Para tenerlo solo en el directo, desactiva el overlay en el juego: la página se sigue actualizando.", "OBSで: ソース → + → ブラウザ、「ローカルファイル」にチェックを入れてこのファイルを選択。幅 360、高さ 220（クラシックは 450 × 300）。配信にだけ表示したい場合はゲーム内オーバーレイをオフにしてください。ページは更新され続けます。"),
+        ["obsSteps"] = L.T("Dans OBS : Sources → + → Navigateur, coche « Fichier local », choisis ce fichier. Largeur 400, hauteur 140 pour la carte (360 × 220 en HUD, 450 × 300 en classique). Pour ne l'avoir que sur le stream, désactive l'overlay en jeu : la page continue d'être mise à jour.",
+            "In OBS: Sources → + → Browser, tick \"Local file\", pick this file. Width 400, height 140 for the card (360 × 220 for HUD, 450 × 300 for classic). To have it on the stream only, turn the in-game overlay off: the page keeps being updated.",
+            "En OBS: Fuentes → + → Navegador, marca «Archivo local», elige este archivo. Ancho 400, alto 140 para la tarjeta (360 × 220 en HUD, 450 × 300 en clásico). Para tenerlo solo en el directo, desactiva el overlay en el juego: la página se sigue actualizando.", "OBSで: ソース → + → ブラウザ、「ローカルファイル」にチェックを入れてこのファイルを選択。カードは幅 400、高さ 140（HUD は 360 × 220、クラシックは 450 × 300）。配信にだけ表示したい場合はゲーム内オーバーレイをオフにしてください。ページは更新され続けます。"),
         ["copy"] = L.T("Copier le chemin", "Copy the path", "Copiar la ruta", "パスをコピー"),
         ["copied"] = L.T("Copié !", "Copied!", "¡Copiado!", "コピーしました！"),
         ["preview"] = L.T("Aperçu", "Preview", "Vista previa", "プレビュー"),
@@ -400,7 +401,7 @@ public static class GuiPage
         function overlay(T){
           const o=S.overlay;
           let h=`<div class="card">${row(esc(T.inGame),esc(T.inGameHelp),sw('ov',o.show,'showOverlay'))}
-            ${row(esc(T.style),'',sel('overlayStyle',o.style,[['hud',T.hud],['classic',T.classic]]))}
+            ${row(esc(T.style),'',sel('overlayStyle',o.style,[['card',T.card],['hud',T.hud],['classic',T.classic]]))}
             ${o.show?row(esc(T.size),'',sel('overlaySize',o.size,o.sizes.map(x=>[x,x+' %'])))+row(esc(T.opacity),'',sel('overlayOpacity',o.opacity,o.opacities.map(x=>[x,x+' %']))):''}
             ${row(esc(T.squadToggle)+`<span class="badge" title="${esc(T.inaccurateWhy)}">${esc(T.inaccurate)}</span>`,esc(T.squadHelp)+'<br>'+esc(T.inaccurateWhy),sw('sq',o.squad,'showSquadTotal'))}</div>
             <section><h2 class="pirate">${esc(T.obs)}</h2><div class="card"><span class="path">${esc(S.paths.overlay)}</span><p class="note" style="color:var(--cmuted)">${esc(T.obsSteps)}</p>
