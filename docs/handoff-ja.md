@@ -1,4 +1,4 @@
-# 引き継ぎ資料（日本語版 1.6.0）
+# 引き継ぎ資料（日本語版 1.6.0 / 1.6.1）
 
 作業日: 2026-11-17。ブランチ: `ja-edition`（`main` = LED-N 1.5.1 + content.json 更新 から分岐）。
 
@@ -35,7 +35,7 @@ dotnet build src/ChestCounter/ChestCounter.csproj -c Release
 - `CHESTCOUNTER_GUI_URL_FILE` でウィンドウの URL を出させ、ブラウザペインで履歴タブを操作: +5 補正 → 合計・効率・平均が再計算、削除 → 合計から除外・削除一覧に表示、復元 → 補正を保ったまま復帰、ホームの新タイルを確認
 - 実リプレイでの解析と、WebView2 のウィンドウ自体での表示は今回未確認
 
-## オーバーレイのカード型（1.6.0 リリース後に追加、未リリース）
+## オーバーレイのカード型（1.6.1）
 
 `NativeOverlay` に既定スタイル `card` を追加（`RelayoutCard`／`PaintCard`）。左にアプリのアイコン（exe のリソース 32512 を `LoadImageW`、読めなければ GDI の宝箱）、右に見出し＋線、大きな合計、区切り線の右に 前回・セッション・（チーム）・お宝。OBS 用 `overlay.html` も同じ見た目（`ReportWriter.OverlayCard`）。新規設定の既定は `card`、既存の設定は変更しない。プレビューは `--overlay-preview <file.png>` で全スタイル×3状態を出力できる。
 
