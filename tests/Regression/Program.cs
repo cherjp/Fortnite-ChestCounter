@@ -128,6 +128,40 @@ Check("Saved and read back", back.Matches[1].ManualChestsAdded == -5);
 var oldFile = System.Text.Json.JsonSerializer.Deserialize<TrackerData>("{\"Matches\":[{\"SessionId\":\"z\",\"ChestsOpened\":7}]}")!;
 Check("Files of 1.5.1 read without corrections", oldFile.Matches[0].ManualChestsAdded == 0 && oldFile.DeletedMatches.Count == 0);
 
+Console.WriteLine("Transfer from another account");
+{
+    // Week 3 of the hunt (content.json): 2026-11-15 14:00 to 2026-11-22 14:00 UTC.
+    var now = new DateTime(2026, 11, 18, 12, 0, 0, DateTimeKind.Utc);
+    var old1 = Match("o1", 0, 30, 900, player: "OldMain");            // Nov 10: before this week
+    old1.MatchStartUtc = new DateTime(2026, 11, 10, 12, 0, 0, DateTimeKind.Utc);
+    var oldB = Match("o2", 0, 12, 900, player: "OldMain");            // Nov 17: this week
+    oldB.MatchStartUtc = new DateTime(2026, 11, 17, 12, 0, 0, DateTimeKind.Utc);
+    var mine = Match("n1", 0, 5, 900, player: "NewMain");
+    mine.MatchStartUtc = new DateTime(2026, 11, 18, 10, 0, 0, DateTimeKind.Utc);
+    var td = new TrackerData { Matches = { old1, oldB, mine }, ManualChests = { ["oldmain"] = 8 },
+        ManualHistory = { ["oldmain"] = new List<ManualEntry> { new() { Id = "h1", Chests = 8, Kind = ManualEntry.Hand } } } };
+    var cfg = new Config { Profile = "newmain" };
+    var sources = Profiles.TransferSources(td, cfg, now);
+    Check("Other accounts offered", sources is [{ Key: "oldmain", Chests: 50, ThisWeek: 12 }], string.Join(", ", sources));
+    var moved = Profiles.TransferFrom(td, cfg, "oldmain", now);
+    var view = Profiles.View(td, cfg);
+    Check("Moved: replays + added by hand", moved is { Chests: 50 } && view.TotalChests == 55, view.TotalChests.ToString());
+    var hist = Profiles.ManualHistory(td, cfg);
+    Check("Two entries: this week and the rest", hist.Count(e => e.Kind == ManualEntry.Transfer) == 2
+        && hist.Single(e => e.WeekFromUtc != null).Chests == 12 && hist.Single(e => e.Kind == ManualEntry.Transfer && e.WeekFromUtc == null).Chests == 38);
+    Check("Shown with the account's name", hist.All(e => e.FromName == "OldMain"));
+    oldB.ChestsOpened = 20; // played again on the old account
+    Profiles.TransferFrom(td, cfg, "oldmain", now);
+    Check("Moving again replaces the transfer", Profiles.View(td, cfg).TotalChests == 63, Profiles.View(td, cfg).TotalChests.ToString());
+    Check("The other account does not change", td.ManualChests["oldmain"] == 8);
+    var reverse = new Config { Profile = "oldmain" };
+    Check("No double count reverse and forth", Profiles.TransferSources(td, reverse, now) is [{ Key: "newmain", Chests: 5 }]);
+    Check("Not from the account shown", Profiles.TransferFrom(td, cfg, "newmain", now) == null && Profiles.TransferFrom(td, cfg, "nobody", now) == null);
+    var undo = Profiles.ManualHistory(td, cfg).Where(e => e.Kind == ManualEntry.Transfer).Select(e => e.Id).ToList();
+    undo.ForEach(id => Profiles.RemoveManual(td, cfg, id));
+    Check("Undone with the cross", Profiles.View(td, cfg).TotalChests == 5);
+}
+
 Console.WriteLine("Report and CSV in Japanese");
 var reportData = new TrackerData { AnalyzerVersion = ReplayAnalyzer.CurrentVersion, Matches = { a, b, e } };
 b.ManualChestsAdded = 2;

@@ -147,6 +147,16 @@ public static class GuiPage
         ["removeEntry"] = L.T("Annuler cet ajout", "Undo this addition", "Anular este añadido", "この追加を取り消す"),
         ["thisWeek"] = L.T("Ouverts cette semaine", "Opened this week", "Abiertos esta semana", "今週開けた"),
         ["thisWeekHelp"] = L.T("comptent aussi pour les trésors hebdo de la semaine {0}", "also count for the weekly treasures of week {0}", "cuentan también para los tesoros semanales de la semana {0}", "第{0}週の週替わりのお宝にも数えます"),
+        ["transfer"] = L.T("Transférer depuis un autre compte", "Move from another account", "Traspasar desde otra cuenta", "別のアカウントから移行"),
+        ["transferHelp"] = L.T("Tu joues sur plusieurs comptes ? Les coffres du compte choisi (comptés dans ses replays et ajoutés à la main) s'ajoutent à ce compte-ci ; ceux de cette semaine comptent aussi dans ses chances. Transférer à nouveau depuis le même compte remplace le transfert précédent. Le compte d'origine ne change pas.",
+            "Playing on several accounts? The chests of the account you pick (counted in its replays and added by hand) are added to this one; those of this week count in its chances too. Moving again from the same account replaces the previous transfer. The other account does not change.",
+            "¿Juegas con varias cuentas? Los cofres de la cuenta elegida (contados en sus repeticiones y añadidos a mano) se suman a esta; los de esta semana cuentan también en sus probabilidades. Traspasar de nuevo desde la misma cuenta sustituye el traspaso anterior. La otra cuenta no cambia.",
+            "複数のアカウントでプレイしている場合に使います。選んだアカウントの宝箱（リプレイで数えた数と手動で追加した数）が、表示中のアカウントに加わります。今週の分は今週の確率にも数えます。同じアカウントからもう一度移行すると、前回の移行分を置き換えます。移行元のアカウントの数は変わりません。"),
+        ["transferFrom"] = L.T("Compte d'origine", "From account", "Cuenta de origen", "移行元のアカウント"),
+        ["transferAmount"] = L.T("{0} coffres", "{0} chests", "{0} cofres", "宝箱 {0} 個"),
+        ["transferWeek"] = L.T("dont {0} cette semaine", "{0} of them this week", "de ellos, {0} esta semana", "うち今週 {0} 個"),
+        ["transferBtn"] = L.T("Transférer", "Move", "Traspasar", "移行"),
+        ["transferAgain"] = L.T("Mettre à jour le transfert", "Update the transfer", "Actualizar el traspaso", "移行し直す"),
         ["estimate"] = L.T("Ou estimer à partir de tes parties", "Or estimate from your matches", "O estimar a partir de tus partidas", "または試合数から見積もる"),
         ["estimateHelp"] = L.T("Nombre de parties Battle Royale de la saison, dans Fortnite : Carrière → Statistiques.", "Number of Battle Royale matches this season, in Fortnite: Career → Stats.", "Número de partidas de Battle Royale de la temporada, en Fortnite: Carrera → Estadísticas.", "今シーズンのバトルロイヤルの試合数（Fortnite: キャリア → 統計）。"),
         ["career"] = L.T("Parties jouées", "Matches played", "Partidas jugadas", "プレイした試合数"),
@@ -430,10 +440,19 @@ public static class GuiPage
             <div class="actions"><input type="number" id="${p}manual" step="1" placeholder="0" aria-label="${esc(T.manual)}" onkeydown="if(event.key==='Enter')addManual('${p}')"><button class="b main" onclick="addManual('${p}')">${esc(T.addBtn)}</button></div>
             ${S.manualWeek?`<label class="mweek"><input type="checkbox" id="${p}week"><b>${esc(T.thisWeek)}</b><span>${esc(fmt(T.thisWeekHelp,S.manualWeek))}</span></label>`:''}
             ${hist.length?`<ul class="mhist">${hist.map(e=>`<li><b class="num">${esc(e.chests)}</b><span>${esc([e.what,e.when].filter(Boolean).join(' · '))}</span><button type="button" class="mx" title="${esc(T.removeEntry)}" aria-label="${esc(T.removeEntry)}" onclick="removeManual('${p}','${esc(e.id)}')">×</button></li>`).join('')}</ul>`:''}
+            ${transferForm(T,p)}
             <div class="t" style="margin-top:16px;font-weight:600">${esc(T.estimate)}</div><p class="note" style="color:var(--cmuted)">${esc(T.estimateHelp)}</p>
             <div class="actions"><input type="number" id="${p}career" min="0" placeholder="${esc(T.career)}" aria-label="${esc(T.career)}"><button class="b" onclick="doEstimate('${p}')">${esc(T.compute)}</button></div>
             <div class="estimate" id="${p}est">${estimate&&estimate.p===p?estimateHtml(T,p):''}</div>`;
         }
+        // Chests of another account of this PC moved to the profile shown (replaces an earlier transfer from it).
+        function transferForm(T,p){const L=S.transferSources||[];if(!L.length)return '';const f=L[0];
+          return `<div class="t" style="margin-top:16px;font-weight:600">${esc(T.transfer)}</div><p class="note" style="color:var(--cmuted)">${esc(T.transferHelp)}</p>
+            <div class="actions"><select id="${p}tsrc" aria-label="${esc(T.transferFrom)}" title="${esc(T.transferFrom)}" onchange="transferInfo('${p}')">${L.map(s=>`<option value="${esc(s.key)}">${esc(s.name)}</option>`).join('')}</select><button class="b main" id="${p}tbtn" onclick="doTransfer('${p}')">${esc(f.done?T.transferAgain:T.transferBtn)}</button></div>
+            <div class="estimate" id="${p}tinfo">${esc(transferText(T,f))}</div>`}
+        function transferText(T,s){return fmt(T.transferAmount,s.chests)+(s.week?' · '+fmt(T.transferWeek,s.week):'')}
+        function transferInfo(p){const k=$('#'+p+'tsrc').value,s=(S.transferSources||[]).find(x=>x.key===k);if(!s)return;$('#'+p+'tinfo').textContent=transferText(S.txt,s);$('#'+p+'tbtn').textContent=s.done?S.txt.transferAgain:S.txt.transferBtn}
+        async function doTransfer(p){const e=$('#'+p+'tsrc');if(!e)return;await api('manualTransfer',e.value);redrawManual(p)}
         function estimateHtml(T,p){if(estimate.error)return esc(estimate.error);return esc(estimate.text)+`<div class="actions" style="margin-top:8px"><button class="b main" onclick="addEstimate('${p}')">${esc(fmt(T.add,estimate.chestsText))}</button></div>`}
         async function doEstimate(p){const r=await api('estimate',parseInt($('#'+p+'career').value||'0',10));estimate=Object.assign({p},r);const e=$('#'+p+'est');if(e)e.innerHTML=estimateHtml(S.txt,p)}
         async function addManual(p){const i=$('#'+p+'manual'),w=$('#'+p+'week'),n=parseInt(i&&i.value||'0',10);if(!n){if(i)i.focus();return}await api('manualAdd',{chests:n,thisWeek:!!(w&&w.checked)});redrawManual(p)}

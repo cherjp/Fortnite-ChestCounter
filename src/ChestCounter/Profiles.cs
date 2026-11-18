@@ -125,7 +125,7 @@ public static class Profiles
         var key = Current(d, c)?.Key ?? "";
         // Copies: the "earlier" entry is adjusted for the display only.
         var list = (d.ManualHistory.GetValueOrDefault(key) ?? new List<ManualEntry>())
-            .Select(e => new ManualEntry { Id = e.Id, Chests = e.Chests, AddedUtc = e.AddedUtc, Kind = e.Kind, CareerMatches = e.CareerMatches, WeekFromUtc = e.WeekFromUtc })
+            .Select(e => new ManualEntry { Id = e.Id, Chests = e.Chests, AddedUtc = e.AddedUtc, Kind = e.Kind, CareerMatches = e.CareerMatches, WeekFromUtc = e.WeekFromUtc, FromProfile = e.FromProfile, FromName = e.FromName })
             .ToList();
         Explain(list, Manual(d, key));
         return list.OrderBy(e => e.Kind == ManualEntry.Earlier).ThenByDescending(e => e.AddedUtc).ToList();
@@ -152,6 +152,77 @@ public static class Profiles
             WeekFromUtc = careerMatches == null ? weekFromUtc : null,
         });
         Keep(d, key, list);
+    }
+
+    // ---- Transfer from another account of this PC (several accounts, one player) ------------------------------------
+
+    /// <summary>
+    /// What a transfer from <paramref name="sourceKey"/> would add: the account's chests (counted in its replays + added
+    /// by hand to it, transfers into it left out so that two accounts never count each other twice), of which
+    /// <c>ThisWeek</c> were opened in the current treasure week.
+    /// </summary>
+    public sealed record TransferAmount(string Key, string Name, int Chests, int ThisWeek);
+
+    /// <summary>The other accounts the profile shown can take chests from (null entries left out).</summary>
+    public static List<TransferAmount> TransferSources(TrackerData d, Config c, DateTime nowUtc)
+    {
+        var current = Current(d, c)?.Key;
+        return List(d).Where(p => p.Key != current).Select(p => TransferOf(d, p, nowUtc)).ToList();
+    }
+
+    private static TransferAmount TransferOf(TrackerData d, Profile source, DateTime nowUtc)
+    {
+        var matches = Counted(d).Where(m => Key(m) == source.Key).ToList();
+        var own = (d.ManualHistory.GetValueOrDefault(source.Key) ?? new List<ManualEntry>()).Where(e => e.Kind != ManualEntry.Transfer).ToList();
+        // Its manual total without what was moved into it (an "earlier" part not in the history counts too).
+        var manual = d.ManualChests.GetValueOrDefault(source.Key)
+            - (d.ManualHistory.GetValueOrDefault(source.Key) ?? new List<ManualEntry>()).Where(e => e.Kind == ManualEntry.Transfer).Sum(e => e.Chests);
+        var total = Math.Max(0, matches.Sum(m => m.ChestsOpened) + manual);
+        var week = TreasureCatalog.WeekOf(nowUtc);
+        var thisWeek = 0;
+        if (week != null)
+        {
+            DateTime Start(MatchRecord m) => DateTime.SpecifyKind(m.MatchStartUtc ?? m.AnalyzedAtUtc, DateTimeKind.Utc).ToUniversalTime();
+            thisWeek = matches.Where(m => Start(m) >= week.From && Start(m) < week.To).Sum(m => m.ChestsOpened)
+                + own.Where(e => e.WeekFromUtc == week.From).Sum(e => e.Chests);
+        }
+        return new TransferAmount(source.Key, source.Name, total, Math.Clamp(thisWeek, 0, total));
+    }
+
+    /// <summary>
+    /// Adds the chests of another account to the profile shown (replacing an earlier transfer from it): two entries, the
+    /// chests of this week (they count in this week's chances) and the others. Null when the account is unknown.
+    /// </summary>
+    public static TransferAmount? TransferFrom(TrackerData d, Config c, string sourceKey, DateTime nowUtc)
+    {
+        if (List(d).FirstOrDefault(p => p.Key == sourceKey) is not { } source || source.Key == Current(d, c)?.Key)
+        {
+            return null;
+        }
+        var amount = TransferOf(d, source, nowUtc);
+        var (key, list) = Settle(d, c);
+        list.RemoveAll(e => e.Kind == ManualEntry.Transfer && e.FromProfile == sourceKey);
+        var week = TreasureCatalog.WeekOf(nowUtc);
+        void Add(int chests, DateTime? weekFrom)
+        {
+            if (chests != 0)
+            {
+                list.Add(new ManualEntry
+                {
+                    Id = Guid.NewGuid().ToString("N")[..8],
+                    Chests = chests,
+                    AddedUtc = nowUtc,
+                    Kind = ManualEntry.Transfer,
+                    FromProfile = source.Key,
+                    FromName = source.Name,
+                    WeekFromUtc = weekFrom,
+                });
+            }
+        }
+        Add(amount.ThisWeek, week?.From);
+        Add(amount.Chests - amount.ThisWeek, null);
+        Keep(d, key, list);
+        return amount;
     }
 
     /// <summary>Removes one entry of the history (its chests leave the total). False when it does not exist.</summary>

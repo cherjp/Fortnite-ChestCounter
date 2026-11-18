@@ -58,7 +58,17 @@ public sealed class ManualEntry
     /// <summary>What was added before the history existed (or by an older version): one entry, id "earlier".</summary>
     public const string Earlier = "earlier";
 
+    /// <summary>
+    /// Moved from another account (profile) of this PC: its chests count for the profile shown too. A new transfer from
+    /// the same account replaces the previous one.
+    /// </summary>
+    public const string Transfer = "transfer";
+
     public string Id { get; set; } = "";
+
+    /// <summary>Transfer: key and name of the account the chests come from.</summary>
+    public string? FromProfile { get; set; }
+    public string? FromName { get; set; }
     public int Chests { get; set; }
     public DateTime? AddedUtc { get; set; }
     public string Kind { get; set; } = Hand;

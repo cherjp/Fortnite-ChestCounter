@@ -921,11 +921,22 @@ object BuildGuiState()
             {
                 ManualEntry.Estimate => L.T($"estimation · {L.N(e.CareerMatches ?? 0)} parties", $"estimate · {L.N(e.CareerMatches ?? 0)} matches", $"estimación · {L.N(e.CareerMatches ?? 0)} partidas", $"見積もり · {L.N(e.CareerMatches ?? 0)} 試合"),
                 ManualEntry.Earlier => L.T("ajouts précédents", "earlier additions", "añadidos anteriores", "以前の追加分"),
+                ManualEntry.Transfer => L.T($"transfert depuis {e.FromName}", $"moved from {e.FromName}", $"traspaso desde {e.FromName}", $"{e.FromName} から移行")
+                    + (TreasureCatalog.Weeks.FirstOrDefault(w => w.From == e.WeekFromUtc) is { } tw ? " · " + L.WeekName(tw.Number) : ""),
                 _ => TreasureCatalog.Weeks.FirstOrDefault(w => w.From == e.WeekFromUtc) is { } wk
                     ? L.T($"semaine {wk.Number}", $"week {wk.Number}", $"semana {wk.Number}", $"第{wk.Number}週")
                     : "",
             },
             when = e.AddedUtc is { } added ? L.DateTimeShort(L.Shown(added)) : "",
+        }).ToList(),
+        // The other accounts of this PC whose chests can be moved to the profile shown.
+        transferSources = Profiles.TransferSources(data, config, DateTime.UtcNow).Select(t => new
+        {
+            key = t.Key,
+            name = t.Name,
+            chests = L.N(t.Chests),
+            week = t.ThisWeek > 0 ? L.N(t.ThisWeek) : null,
+            done = Profiles.ManualHistory(data, config).Any(e => e.Kind == ManualEntry.Transfer && e.FromProfile == t.Key),
         }).ToList(),
         session = L.N(session.Sum(m => m.ChestsOpened)),
         sessionMatches = L.N(session.Count),
@@ -1158,6 +1169,13 @@ object? RunGuiAction(string name, System.Text.Json.JsonElement value)
             break;
         case "matchRestore":
             if (MatchHistory.Restore(data, Str())) store.SaveData(data);
+            break;
+        case "manualTransfer":
+            if (Profiles.TransferFrom(data, config, Str(), DateTime.UtcNow) is { } moved)
+            {
+                store.SaveData(data);
+                result = new { chests = L.N(moved.Chests) };
+            }
             break;
         case "manualRemove":
             if (Profiles.RemoveManual(data, config, Str()))
