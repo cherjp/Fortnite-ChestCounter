@@ -58,11 +58,11 @@ var english = GuiPage.Texts();
 L.Set("ja");
 var untranslated = texts.Where(kv => kv.Value == english[kv.Key] && kv.Value is not ("OK")).Select(kv => kv.Key).ToList();
 Check("Every text of the window in Japanese", untranslated.Count == 0, string.Join(", ", untranslated));
-Check("Release notes: Japanese section", ReleaseNotes.WhatsNew(ReleaseNotes.Embedded, "ja") is { Count: 3 } jaNotes && jaNotes[0].StartsWith("カード型オーバーレイ"),
+Check("Release notes: Japanese section", ReleaseNotes.WhatsNew(ReleaseNotes.Embedded, "ja") is { Count: 2 } jaNotes && jaNotes[0].StartsWith("別のアカウントから宝箱を移行"),
     string.Join(" | ", ReleaseNotes.WhatsNew(ReleaseNotes.Embedded, "ja")));
-Check("Release notes: other languages keep theirs", ReleaseNotes.WhatsNew(ReleaseNotes.Embedded, "en") is { Count: 3 } en && en[0].StartsWith("Card overlay")
-    && ReleaseNotes.WhatsNew(ReleaseNotes.Embedded, "fr").Count == 3 && ReleaseNotes.WhatsNew(ReleaseNotes.Embedded, "es").Count == 3);
-Check("Version", AppInfo.VersionText == "1.6.1", AppInfo.VersionText);
+Check("Release notes: other languages keep theirs", ReleaseNotes.WhatsNew(ReleaseNotes.Embedded, "en") is { Count: 2 } en && en[0].StartsWith("Move chests from another account")
+    && ReleaseNotes.WhatsNew(ReleaseNotes.Embedded, "fr").Count == 2 && ReleaseNotes.WhatsNew(ReleaseNotes.Embedded, "es").Count == 2);
+Check("Version", AppInfo.VersionText == "1.6.2", AppInfo.VersionText);
 Check("Durations", L.Duration(1267) == "21:07" && L.Duration(null) == "—" && L.Duration(0) == "—" && L.Duration(-5) == "—");
 
 Console.WriteLine("Match time and averages");

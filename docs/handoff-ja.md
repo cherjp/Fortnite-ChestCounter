@@ -43,7 +43,7 @@ dotnet build src/ChestCounter/ChestCounter.csproj -c Release
 
 その後 FModel MCP で発見: `FortniteGame/Plugins/GameFeatures/DelilahTreasureHuntShared/Content/Assets/Icons/T_UI_DelilahTreasureHunt_ItemGeneric`（128×128、DXT5、`pakchunk50-WindowsClient.utoc` で暗号化なし）。開き方: ディレクトリ `C:\Program Files\Epic Games\Fortnite\FortniteGame\Content\Paks`、`GAME_UE5_LATEST`、AES キーなし、mappings は 43.00 の usmap（43.10 の usmap は v5 で MCP 1.1.1 の解析器が非対応）。FModel の設定に「Fortnite [LIVE]」の項目が残っていると `list_saved_games`／`open_saved_game` が「directory is not absolute」で失敗するため `open_game` を直接使った。PNG はユーザーの `%APPDATA%\ChestCounter\overlay-chest.png` に配置済み。
 
-## 別のアカウントからの移行（未リリース）
+## 別のアカウントからの移行（1.6.2）
 
 `Profiles.TransferSources`／`Profiles.TransferFrom`。移行元の合計 = リプレイで数えた数 + 手動追加分（移行で入った分は除外して、行き来による二重計上を防ぐ）。手動追加の履歴に `ManualEntry.Transfer`（`FromProfile`／`FromName`）として、今週分（`WeekFromUtc` 付き）と残りの2件で追加。同じ移行元からの再移行は置き換え。ウィンドウでは「宝箱の数を編集」ダイアログの「別のアカウントから移行」（アクション `manualTransfer`、状態 `transferSources`）。回帰テスト60件。
 
